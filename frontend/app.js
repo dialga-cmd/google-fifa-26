@@ -1,7 +1,9 @@
-const API_URL = 'http://localhost:8000/advice';
+const API_URL = '/advice';
 const messagesDiv = document.getElementById('messages');
 const routeDisplay = document.getElementById('route-display');
 const routeText = document.getElementById('route-text');
+const stadiumSelect = document.getElementById('stadium-select');
+const locationSelect = document.getElementById('location-select');
 const queryInput = document.getElementById('query-input');
 const voiceBtn = document.getElementById('voice-btn');
 const sendBtn = document.getElementById('send-btn');
@@ -120,7 +122,9 @@ function showRoute(route) {
 async function sendQuery() {
     const query = queryInput.value.trim();
     const selectedLang = langSelect.value;
-    if (!query) return;
+    const selectedStadium = stadiumSelect.value;
+    const selectedLocation = locationSelect.value || 'Gate_A';
+    if (!query || !selectedStadium) return;
 
     queryInput.disabled = true;
     sendBtn.disabled = true;
@@ -132,23 +136,30 @@ async function sendQuery() {
     queryInput.value = '';
 
     try {
+        const body = {
+            query: query,
+            language: selectedLang,
+            location: selectedLocation,
+            stadium: selectedStadium
+        };
+        console.debug('Sending advice request', body);
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                query: query,
-                language: selectedLang,
-                location: 'Gate_A' 
-            })
+            body: JSON.stringify(body)
         });
 
+        console.debug('Advice response status:', response.status);
         if (!response.ok) {
+            const text = await response.text();
+            console.error('Advice request failed body:', text);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
+        console.debug('Advice response data:', data);
         addMessage(data.advice);
         showRoute(data.route);
 
@@ -173,6 +184,32 @@ queryInput.addEventListener('keypress', (e) => {
     }
 });
 
+async function loadStadiums() {
+    try {
+        console.debug('Loading stadium list from /stadiums');
+        const response = await fetch('/stadiums?nocache=' + Date.now());
+        console.debug('Stadium list response status:', response.status);
+        if (!response.ok) {
+            throw new Error('Failed to load stadium list');
+        }
+        const data = await response.json();
+        stadiumSelect.innerHTML = '';
+        data.stadiums.forEach((name) => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            stadiumSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Stadium loading error:', error);
+        stadiumSelect.innerHTML = '<option value="MetLife Stadium">MetLife Stadium</option>' +
+            '<option value="SoFi Stadium">SoFi Stadium</option>' +
+            '<option value="AT&T Stadium">AT&T Stadium</option>';
+    }
+}
+
+loadStadiums();
+
 voiceBtn.addEventListener('click', () => {
     if (!recognition) {
         alert('Speech recognition not available in this browser');
@@ -186,6 +223,14 @@ voiceBtn.addEventListener('click', () => {
 });
 
 queryInput.focus();
+
+window.addEventListener('error', (event) => {
+    console.error('Global runtime error:', event.error || event.message, event);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    console.error('Unhandled promise rejection:', event.reason);
+});
 
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {

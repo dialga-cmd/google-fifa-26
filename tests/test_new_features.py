@@ -141,6 +141,21 @@ def test_rate_limiter():
     pass
 
 
+def test_frontend_assets_served():
+    """The root route should serve the frontend landing page and its assets."""
+    index_response = client.get("/")
+    assert index_response.status_code == 200
+    assert "FanWayfinder" in index_response.text
+
+    js_response = client.get("/app.js")
+    assert js_response.status_code == 200
+    assert "API_URL" in js_response.text
+
+    css_response = client.get("/style.css")
+    assert css_response.status_code == 200
+    assert "font-family" in css_response.text.lower()
+
+
 if __name__ == "__main__":
     # Run tests manually if needed
     import pytest

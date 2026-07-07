@@ -13,6 +13,20 @@ body {
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
     margin-bottom: 20px;
 }
+#chat-settings {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
+#chat-settings .settings-title {
+    font-size: 14px;
+    color: #555;
+    margin-right: 10px;
+    align-self: center;
+}
+#chat-settings .settings-control {
+    min-width: 220px;
+}
 #messages {
     height: 400px;
     overflow-y: auto;
@@ -60,13 +74,70 @@ body {
 .speaker-btn:hover {
     background-color: rgba(0,0,0,0.1);
 }
+#chat-container {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+#chat-settings {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
+#chat-settings .settings-title {
+    font-size: 14px;
+    color: #555;
+    margin-right: 10px;
+    align-self: center;
+}
+#chat-settings .settings-control {
+    min-width: 220px;
+    max-width: 260px;
+}
+#chat-settings .settings-control select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    background-color: white;
+    cursor: pointer;
+    box-sizing: border-box;
+}
 #input-container {
     display: flex;
+    flex-direction: column;
     gap: 10px;
-    align-items: flex-end;
+}
+#meta-row {
+    display: flex;
+    gap: 10px;
+}
+.input-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.input-group label {
+    font-size: 14px;
+    color: #555;
+}
+.input-group select,
+#stadium-select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    background-color: white;
+    cursor: pointer;
+    box-sizing: border-box;
 }
 #query-input {
-    flex: 1;
+    width: 100%;
     padding: 12px;
     border: 2px solid #ddd;
     border-radius: 5px;
@@ -79,12 +150,17 @@ body {
     box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
 }
 #lang-select {
+    width: 100%;
     padding: 12px;
     border: 2px solid #ddd;
     border-radius: 5px;
     font-size: 16px;
     background-color: white;
     cursor: pointer;
+}
+#send-row {
+    display: flex;
+    gap: 10px;
 }
 #voice-btn, #send-btn {
     padding: 12px 20px;
@@ -100,7 +176,6 @@ body {
     color: #1976d2;
     border: 2px solid #1976d2;
     width: 50px;
-    padding: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -111,11 +186,68 @@ body {
 #send-btn {
     background-color: #1976d2;
     color: white;
+    flex: 1;
 }
 #send-btn:hover {
     background-color: #1565c0;
 }
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+    #chat-container {
+        padding: 15px;
+    }
+    #chat-settings {
+        justify-content: stretch;
+    }
+    #meta-row {
+        flex-direction: column;
+    }
+    #send-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    #voice-btn {
+        width: 100%;
+    }
+}
+#voice-btn, #send-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+#voice-btn {
+    background: none;
+    color: #1976d2;
+    border: 2px solid #1976d2;
+    width: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#voice-btn:hover {
+    background-color: rgba(25, 118, 210, 0.1);
+}
+#send-btn {
+    background-color: #1976d2;
+    color: white;
+    width: 100%;
+}
+#send-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+#send-row button {
+    flex: 0 0 auto;
+}
 #route-display {
+    display: none;
     background: #fff3e0;
     padding: 15px;
     border-radius: 5px;
@@ -169,7 +301,10 @@ body {
     #chat-container {
         padding: 15px;
     }
-    #input-container {
+    #meta-row {
+        flex-direction: column;
+    }
+    #send-row {
         flex-direction: column;
         align-items: stretch;
     }

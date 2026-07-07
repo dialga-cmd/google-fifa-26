@@ -35,7 +35,19 @@ vercel
 
 When prompted, choose the current folder and confirm the deployment.
 
-## 4. Share your demo assets
+## 4. Optional AI provider setup
+
+If you want the demo to look more clearly GenAI-powered, add one of these environment variables in your deployment platform:
+
+```bash
+GEMINI_API_KEY=your-key
+GROQ_API_KEY=your-key
+AI_PROVIDER=auto
+```
+
+If no key is present, the app will still function using its local fallback logic.
+
+## 5. Share your demo assets
 
 Prepare:
 - A public GitHub repo link

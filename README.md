@@ -95,6 +95,18 @@ fan_wayfinder/
 
 Vercel can host a lightweight serverless API for this project.
 
+### Optional AI configuration
+
+If you want the app to use a real AI provider for richer responses, set one of these environment variables in your deployment settings:
+
+```bash
+export GEMINI_API_KEY="your-gemini-key"
+export GROQ_API_KEY="your-groq-key"
+export AI_PROVIDER="auto"
+```
+
+The app will use Gemini first when available, then Groq, and otherwise fall back to the built-in local logic.
+
 ### Prerequisites
 
 - A Vercel account

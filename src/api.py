@@ -10,12 +10,39 @@ import os
 import threading
 import time
 import re
+from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Set
 import secrets
+import httpx
 from functools import lru_cache
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel, Field, field_validator
+
+
+def load_env_file() -> None:
+    dotenv_path = Path(__file__).resolve().parent.parent / '.env'
+    if not dotenv_path.exists():
+        return
+
+    logger = logging.getLogger(__name__)
+    try:
+        with open(dotenv_path, 'r', encoding='utf-8') as handle:
+            for line in handle:
+                line = line.strip()
+                if not line or line.startswith('#') or '=' not in line:
+                    continue
+                key, value = line.split('=', 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+        logger.info('Loaded environment variables from %s', dotenv_path)
+    except Exception as exc:
+        logger.warning('Could not load .env file: %s', exc)
+
+
+load_env_file()
 
 try:
     from google import genai as google_genai
@@ -24,6 +51,7 @@ except ImportError:  # pragma: no cover - depends on environment
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Depends, status, Request
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from jose import jwt, JWTError
@@ -56,6 +84,8 @@ class Config:
     MAX_QUERY_LENGTH = int(os.getenv("MAX_QUERY_LENGTH", "200"))
     CACHE_SIZE = int(os.getenv("CACHE_SIZE", "128"))
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+    AI_PROVIDER = os.getenv("AI_PROVIDER", "auto")
     # Security settings
     SECRET_KEY = os.getenv("SECRET_KEY", _DEFAULT_SECRET_KEY)  # fallback for dev only
     ACCESS_TOKEN_EXPIRE_MINUTES = int(
@@ -71,6 +101,25 @@ class Config:
     REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
     # Allowed languages (ISO 639-1)
     ALLOWED_LANGUAGES = {"en", "es", "fr", "de", "zh", "ar", "ru"}
+    FIFA_STADIUMS = {
+        "MetLife Stadium",
+        "SoFi Stadium",
+        "AT&T Stadium",
+        "Mercedes-Benz Stadium",
+        "Gillette Stadium",
+        "Lumen Field",
+        "Hard Rock Stadium",
+        "Levi's Stadium",
+        "NRG Stadium",
+        "Arrowhead Stadium",
+        "Lucas Oil Stadium",
+        "Rose Bowl",
+        "BMO Field",
+        "BC Place",
+        "Commonwealth Stadium",
+        "Estadio Azteca",
+    }
+    DEFAULT_STADIUM = "MetLife Stadium"
 
     @classmethod
     def validate_production_config(cls):
@@ -89,6 +138,7 @@ class AdviceRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=Config.MAX_QUERY_LENGTH)
     language: str = Field(default="en")
     location: str = Field(default=Config.DEFAULT_LOCATION)
+    stadium: str = Field(default=Config.DEFAULT_STADIUM)
 
     @field_validator('query')
     @classmethod
@@ -111,6 +161,13 @@ class AdviceRequest(BaseModel):
         if not v or len(v) > 50:
             raise ValueError('Invalid location')
         # Additional validation will be performed at runtime against known nodes
+        return v
+
+    @field_validator('stadium')
+    @classmethod
+    def validate_stadium(cls, v):
+        if not v or v not in Config.FIFA_STADIUMS:
+            raise ValueError(f"Stadium must be one of the FIFA 2026 venues: {sorted(Config.FIFA_STADIUMS)}")
         return v
 
 class AdviceResponse(BaseModel):
@@ -366,14 +423,17 @@ class MQTTHandler:
             self.client.disconnect()
 
 
-# Rate limiter using Redis via slowapi
-def get_redis_url():
-    password = f":{Config.REDIS_PASSWORD}@" if Config.REDIS_PASSWORD else ""
-    return f"redis://{password}{Config.REDIS_HOST}:{Config.REDIS_PORT}/{Config.REDIS_DB}"
+# Rate limiter using an in-memory store by default for local/demo use.
+# Set SLOWAPI_STORAGE_URI to a Redis URL in production if desired.
+def get_storage_uri() -> str:
+    configured_uri = os.getenv("SLOWAPI_STORAGE_URI")
+    if configured_uri:
+        return configured_uri
+    return "memory://"
 
 limiter = Limiter(
     key_func=get_remote_address,
-    storage_uri=get_redis_url(),
+    storage_uri=get_storage_uri(),
     default_limits=[f"{Config.RATE_LIMIT_REQUESTS}/{Config.RATE_LIMIT_WINDOW}seconds"]
 )
 
@@ -412,6 +472,82 @@ def verify_token(token: str) -> Optional[TokenData]:
         return None
 
 
+def load_system_prompt() -> str:
+    """Load the strict stadium assistant prompt from disk."""
+    prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", "stadium_assistant_prompt.txt")
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as handle:
+            return handle.read().strip()
+    except FileNotFoundError:
+        return (
+            "You are FanWayfinder, a strict stadium assistant. Help fans and staff with navigation, "
+            "safety, accessibility, and crowd guidance. Be concise, practical, and accurate."
+        )
+
+
+def generate_ai_response(prompt: str) -> Optional[str]:
+    """Generate a response from an AI provider when a key is configured."""
+    provider = (Config.AI_PROVIDER or "auto").lower()
+    system_prompt = load_system_prompt()
+    full_prompt = f"{system_prompt}\n\nUser request:\n{prompt}"
+    logger.info(
+        "AI request starting: provider=%s, groq_key=%s, gemini_key=%s",
+        provider,
+        bool(Config.GROQ_API_KEY),
+        bool(Config.GEMINI_API_KEY),
+    )
+
+    if provider in {"groq", "auto"} and Config.GROQ_API_KEY:
+        try:
+            logger.info("Trying Groq provider")
+            response = httpx.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {Config.GROQ_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "llama-3.1-8b-instant",
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt},
+                    ],
+                    "temperature": 0.2,
+                },
+                timeout=15.0,
+            )
+            response.raise_for_status()
+            data = response.json()
+            result = data.get("choices", [{}])[0].get("message", {}).get("content")
+            logger.info("Groq response received")
+            return result
+        except Exception as exc:  # pragma: no cover - network/env dependent
+            response_text = getattr(exc, 'response', None)
+            if response_text is not None:
+                logger.warning("Groq response body: %s", getattr(exc.response, 'text', None))
+            logger.warning("Groq request failed: %s", exc)
+
+    if provider in {"gemini", "auto"} and Config.GEMINI_API_KEY:
+        try:
+            if google_genai is None:
+                logger.warning("Gemini SDK not installed, cannot use Gemini provider")
+            else:
+                logger.info("Trying Gemini provider")
+                client = google_genai.Client(api_key=Config.GEMINI_API_KEY)
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=full_prompt,
+                )
+                result = getattr(response, "text", None)
+                logger.info("Gemini response received")
+                return result
+        except Exception as exc:  # pragma: no cover - network/env dependent
+            logger.warning("Gemini request failed: %s", exc)
+
+    logger.warning("No AI provider response returned")
+    return None
+
+
 # Initialize components
 knowledge_base = KnowledgeBase(Config.KNOWLEDGE_BASE_FILE)
 stadium_graph = StadiumGraph(Config.STADIUM_GRAPH_FILE)
@@ -427,25 +563,14 @@ def get_valid_nodes() -> Set[str]:
     return stadium_graph.valid_nodes
 
 
-# Lifespan event handler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     Config.validate_production_config()  # Validate production configuration
     mqtt_handler.start()
-    # Attach limiter to app state
-    app.state.limiter = limiter
-    # Add exception handler for rate limit
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    # Add rate limiting middleware
-    app.add_middleware(
-        SlowAPIMiddleware,
-        limiter=limiter,
-    )
     yield
     # Shutdown
     mqtt_handler.stop()
-
 
 # FastAPI app
 app = FastAPI(
@@ -454,6 +579,11 @@ app = FastAPI(
     version="2.1.0",
     lifespan=lifespan,
 )
+
+# Attach limiter and exception handler before startup
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # Security middleware
 # In production, replace ["*"] with specific allowed hosts (e.g., ["example.com", "www.example.com"])
@@ -501,6 +631,50 @@ def verify_token_dependency(credentials: HTTPAuthorizationCredentials = Depends(
     return token_data
 
 
+CACHE_HEADERS = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_frontend():
+    """Serve the landing page for the FanWayfinder frontend."""
+    frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
+    index_path = os.path.join(frontend_dir, "index.html")
+    with open(index_path, "r", encoding="utf-8") as handle:
+        return HTMLResponse(handle.read(), headers=CACHE_HEADERS)
+
+
+@app.get("/app.js")
+async def serve_frontend_js():
+    """Serve the frontend JavaScript bundle."""
+    frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
+    return FileResponse(
+        os.path.join(frontend_dir, "app.js"),
+        media_type="application/javascript",
+        headers=CACHE_HEADERS,
+    )
+
+
+@app.get("/style.css")
+async def serve_frontend_css():
+    """Serve the frontend stylesheet."""
+    frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
+    return FileResponse(
+        os.path.join(frontend_dir, "style.css"),
+        media_type="text/css",
+        headers=CACHE_HEADERS,
+    )
+
+
+@app.get("/stadiums")
+async def list_stadiums():
+    """Return the FIFA 2026 stadium list for the frontend."""
+    return {"stadiums": sorted(Config.FIFA_STADIUMS)}
+
+
 @app.post("/token", response_model=TokenResponse)
 async def login_for_access_token(form_data: UserLogin):
     """
@@ -522,12 +696,13 @@ async def get_advice(  # noqa: C901
     http_request: Request,
 ):
     """
-    Get advice for stadium navigation using Gemini AI.
+    Get advice for stadium navigation using AI.
     """
     try:
         query = request.query
         location = request.location
         language = request.language
+        stadium = request.stadium
 
         if location not in stadium_graph.valid_nodes:
             logger.warning(f"Location {location} not in graph, using default")
@@ -535,56 +710,56 @@ async def get_advice(  # noqa: C901
 
         context_str = "\n".join(knowledge_base.chunk_texts)
         
-        # Prepare prompt for Gemini
-        prompt = f'''You are an AI assistant for the FanWayfinder app for FIFA World Cup 2026.
-You help users navigate the stadium and find facilities.
-Context Knowledge Base:
-{context_str}
+        # Prepare prompt for the AI provider
+        prompt = (
+            f"Current stadium: {stadium}\n"
+            f"Current location: {location}\n"
+            f"User query: {query}\n"
+            f"Language: {language}\n\n"
+            "Use only stadium-specific guidance for the selected FIFA 2026 venue. "
+            "Answer as if you are helping a fan inside the selected stadium. "
+            "If the user asks for directions, recommend the nearest relevant facility and a clear route. "
+            "If the user asks about the stadium, mention the selected stadium by name.\n\n"
+            "Context Knowledge Base:\n"
+            f"{context_str}\n\n"
+            "Instructions:\n"
+            "1. Provide a helpful, concise answer in the specified language.\n"
+            "2. If the request is about directions, return the closest facility and a simple route.\n"
+            "3. Extract the intent target type if the user is asking for directions to a facility. "
+            "The valid types are: 'gate', 'concession', 'restroom', 'section', 'medical'. "
+            "If not asking for directions, return 'none'.\n"
+            "Return ONLY a valid JSON object with keys 'advice' (string) and 'target_type' (string)."
+        )
 
-User Query: {query}
-Language: {language}
-
-Instructions:
-1. Provide a helpful, concise answer to the user in the specified language.
-2. Extract the intent target type if the user is asking for directions to a facility. The valid types are: 'gate', 'concession', 'restroom', 'section', 'medical'. If not asking for directions, return "none".
-Return ONLY a valid JSON object with keys "advice" (string) and "target_type" (string).'''
-
-        # Call Gemini AI when available; otherwise fall back to local logic
         target_type = None
         advice = "I couldn't process your request right now."
-        if Config.GEMINI_API_KEY and google_genai is not None:
+        logger.info("Advice request received: stadium=%s location=%s language=%s query=%s", stadium, location, language, query)
+        ai_text = generate_ai_response(prompt)
+        if ai_text:
+            logger.info("AI provider returned text: %s", ai_text[:200].replace('\n', ' '))
             try:
-                client = google_genai.Client(api_key=Config.GEMINI_API_KEY)
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=prompt,
-                )
-
-                # Parse JSON response
-                try:
-                    text = response.text.strip()
-                    if text.startswith("```json"):
-                        text = text[7:-3]
-                    elif text.startswith("```"):
-                        text = text[3:-3]
-                    result = json.loads(text.strip())
-                    advice = result.get("advice", advice)
-                    t_type = result.get("target_type", "none").lower()
-                    if t_type in ['gate', 'concession', 'restroom', 'section', 'medical']:
-                        target_type = t_type
-                except json.JSONDecodeError:
-                    advice = response.text
-            except Exception as e:
-                logger.error(f"Gemini API error: {e}")
-                advice = "Sorry, my AI system is currently unavailable. " + "\n".join(knowledge_base.retrieve_relevant_chunks(query, 1))
-                target_type = determine_target_type(query)
+                text = ai_text.strip()
+                if text.startswith("```json"):
+                    text = text[7:-3]
+                elif text.startswith("```"):
+                    text = text[3:-3]
+                result = json.loads(text.strip())
+                advice = result.get("advice", advice)
+                t_type = result.get("target_type", "none").lower()
+                if t_type in ['gate', 'concession', 'restroom', 'section', 'medical']:
+                    target_type = t_type
+                logger.info("Parsed AI result: target_type=%s advice_length=%d", target_type, len(advice))
+            except json.JSONDecodeError as exc:
+                logger.warning("AI response JSON parse failed: %s", exc)
+                logger.warning("Raw AI text: %s", ai_text)
+                advice = ai_text
         else:
-            logger.warning("GEMINI_API_KEY not set. Falling back to basic logic.")
+            logger.warning("AI provider unavailable or failed. Falling back to basic logic.")
             contexts = knowledge_base.retrieve_relevant_chunks(query, k=1)
             advice = f"Fallback Mode: {contexts[0]}" if contexts else "No information available."
             target_type = determine_target_type(query)
+            logger.info("Fallback advice selected; target_type=%s", target_type)
 
-        # Compute route
         route = None
         if target_type:
             target_nodes = stadium_graph.get_nodes_by_type(target_type)

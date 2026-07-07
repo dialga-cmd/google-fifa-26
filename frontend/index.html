@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:8000;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self';">
     <title>FanWayfinder - FIFA World Cup 2026</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -12,26 +12,51 @@
     <p>Your AI-powered guide for FIFA World Cup 2026 stadium</p>
 
     <div id="chat-container" aria-live="polite" aria-atomic="true">
+        <div id="chat-settings">
+            <div class="settings-title">Active stadium</div>
+            <div class="settings-control">
+                <label for="stadium-select" class="visually-hidden">Select stadium</label>
+                <select id="stadium-select" aria-label="Select stadium">
+                    <option value="" disabled selected>Loading stadiums...</option>
+                </select>
+            </div>
+        </div>
         <div id="messages" aria-label="Chat messages"></div>
-        <div id="route-display" style="display: none;" aria-live="polite">
+        <div id="route-display" aria-live="polite">
             <strong>Suggested Route:</strong> <span id="route-text" aria-live="polite"></span>
         </div>
     </div>
 
     <div id="input-container" aria-label="Input controls">
-        <select id="lang-select" aria-label="Select language">
-            <option value="en">English</option>
-            <option value="es">Español (Spanish)</option>
-            <option value="fr">Français (French)</option>
-            <option value="de">Deutsch (German)</option>
-            <option value="zh">中文 (Chinese)</option>
-            <option value="ar">العربية (Arabic)</option>
-            <option value="ru">Русский (Russian)</option>
-        </select>
+        <div id="meta-row">
+            <div class="input-group">
+                <label for="location-select">Current location</label>
+                <select id="location-select" aria-label="Select current location">
+                    <option value="Gate_A">Gate A</option>
+                    <option value="Gate_B">Gate B</option>
+                    <option value="Gate_C">Gate C</option>
+                    <option value="Gate_D">Gate D</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="lang-select">Language</label>
+                <select id="lang-select" aria-label="Select language">
+                    <option value="en">English</option>
+                    <option value="es">Español (Spanish)</option>
+                    <option value="fr">Français (French)</option>
+                    <option value="de">Deutsch (German)</option>
+                    <option value="zh">中文 (Chinese)</option>
+                    <option value="ar">العربية (Arabic)</option>
+                    <option value="ru">Русский (Russian)</option>
+                </select>
+            </div>
+        </div>
         <label for="query-input" class="visually-hidden">Ask for directions, restrooms, food, medical help...</label>
-        <input type="text" id="query-input" placeholder="Ask for directions..." aria-label="Ask for directions, restrooms, food, medical help..." autocomplete="off">
-        <button id="voice-btn" title="Voice input" aria-label="Voice input">🎤</button>
-        <button id="send-btn" aria-label="Send message">Send</button>
+        <input type="text" id="query-input" placeholder="Ask for directions in your selected stadium..." aria-label="Ask for directions, restrooms, food, medical help..." autocomplete="off">
+        <div id="send-row">
+            <button id="voice-btn" title="Voice input" aria-label="Voice input">🎤</button>
+            <button id="send-btn" aria-label="Send message">Send</button>
+        </div>
     </div>
 
     <div id="status" class="status ready" aria-live="polite">Ready</div>
