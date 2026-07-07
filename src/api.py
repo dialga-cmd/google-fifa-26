@@ -731,6 +731,18 @@ async def get_advice(  # noqa: C901
             "Return ONLY a valid JSON object with keys 'advice' (string) and 'target_type' (string)."
         )
 
+        cache_input = {
+            "query": query,
+            "language": language,
+            "location": location,
+            "stadium": stadium,
+        }
+        cache_key = json.dumps(cache_input, sort_keys=True)
+        cached_response = advice_cache.get(cache_key)
+        if cached_response is not None:
+            logger.info("Returning cached advice for key: %s", cache_key)
+            return cached_response
+
         target_type = None
         advice = "I couldn't process your request right now."
         logger.info("Advice request received: stadium=%s location=%s language=%s query=%s", stadium, location, language, query)
@@ -780,7 +792,9 @@ async def get_advice(  # noqa: C901
                 if best_path:
                     route = best_path
 
-        return AdviceResponse(advice=advice, route=route, congestion_aware=True)
+        response = AdviceResponse(advice=advice, route=route, congestion_aware=True)
+        advice_cache.set(cache_key, response)
+        return response
 
     except Exception as e:
         logger.error(f"Error in get_advice: {e}")

@@ -56,24 +56,6 @@ body {
     margin-right: 10px;
     word-wrap: break-word;
 }
-.speaker-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 18px;
-    padding: 0;
-    margin: 0;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    color: #666;
-}
-.speaker-btn:hover {
-    background-color: rgba(0,0,0,0.1);
-}
 #chat-container {
     background: white;
     border-radius: 10px;
@@ -162,7 +144,7 @@ body {
     display: flex;
     gap: 10px;
 }
-#voice-btn, #send-btn {
+#send-btn {
     padding: 12px 20px;
     border: none;
     border-radius: 5px;
@@ -170,20 +152,6 @@ body {
     font-size: 16px;
     font-weight: 500;
     transition: background-color 0.2s ease;
-}
-#voice-btn {
-    background: none;
-    color: #1976d2;
-    border: 2px solid #1976d2;
-    width: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-#voice-btn:hover {
-    background-color: rgba(25, 118, 210, 0.1);
-}
-#send-btn {
     background-color: #1976d2;
     color: white;
     flex: 1;
@@ -208,11 +176,11 @@ body {
         flex-direction: column;
         align-items: stretch;
     }
-    #voice-btn {
+    #send-btn {
         width: 100%;
     }
 }
-#voice-btn, #send-btn {
+#send-btn {
     padding: 12px 20px;
     border: none;
     border-radius: 5px;
@@ -220,23 +188,12 @@ body {
     font-size: 16px;
     font-weight: 500;
     transition: background-color 0.2s ease;
-}
-#voice-btn {
-    background: none;
-    color: #1976d2;
-    border: 2px solid #1976d2;
-    width: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-#voice-btn:hover {
-    background-color: rgba(25, 118, 210, 0.1);
-}
-#send-btn {
     background-color: #1976d2;
     color: white;
     width: 100%;
+}
+#send-btn:hover {
+    background-color: #1565c0;
 }
 #send-row {
     display: flex;
@@ -277,7 +234,6 @@ body {
 }
 /* Focus styles for accessibility */
 #query-input:focus-visible,
-#voice-btn:focus-visible,
 #send-btn:focus-visible,
 #lang-select:focus-visible {
     outline: 2px solid #1976d2;
