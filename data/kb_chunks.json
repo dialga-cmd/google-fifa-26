@@ -1,0 +1,7 @@
+[
+  {"id": "faq_1", "text": "Where are the restrooms? Restrooms are located near each gate: Restroom_1 near Gate A, Restroom_2 near Gate B, Restroom_3 near Gate C, Restroom_4 near Gate D."},
+  {"id": "faq_2", "text": "Where can I buy food? Concessions are located near each gate: Concession_1 (Hot Dogs) near Gate A, Concession_2 (Beverages) near Gate B, Concession_3 (Snacks) near Gate C, Concession_4 (Merchandise) near Gate D."},
+  {"id": "faq_3", "text": "Where is medical assistance? Medical tents are located near Gate A (Medical_1) and Gate C (Medical_2)."},
+  {"id": "faq_4", "text": "What sections are available? Lower bowl sections 101-104 and upper bowl sections 201-204."},
+  {"id": "map_info", "text": "The stadium has four gates: A (North), B (East), C (South), D (West). Each gate has nearby concessions, restrooms, and medical aid."}
+]

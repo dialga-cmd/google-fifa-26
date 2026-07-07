@@ -1,0 +1,17 @@
+# Core dependencies
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+networkx>=3.1
+paho-mqtt>=1.6.1
+python-jose[cryptography]>=3.3.0
+redis>=5.0.0
+slowapi>=0.1.8
+google-genai>=0.3.0
+
+# Development / testing dependencies (also install via pip install -e .[dev])
+pytest>=7.4.0
+pytest-asyncio>=0.21.1
+pytest-cov>=4.1.0
+mypy>=1.0.0
+ruff>=0.5.0

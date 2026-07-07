@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FanWayfinder - FIFA World Cup 2026</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        #chat-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        #messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #fafafa;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+        }
+        .user-message {
+            background-color: #e3f2fd;
+            margin-left: 20%;
+        }
+        .bot-message {
+            background-color: #e8f5e9;
+            margin-right: 20%;
+        }
+        .message-content {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .speaker-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            margin: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        .speaker-btn:hover {
+            background-color: rgba(0,0,0,0.1);
+        }
+        #input-container {
+            display: flex;
+            gap: 10px;
+        }
+        #query-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        #voice-btn, #send-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #1976d2;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #voice-btn:hover, #send-btn:hover {
+            background-color: #1565c0;
+        }
+        #route-display {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-family: monospace;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 14px;
+            margin-top: 5px;
+            display: inline-block;
+        }
+        .status.listening {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .status.ready {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <h1>FanWayfinder</h1>
+    <p>Your AI-powered guide for FIFA World Cup 2026 stadium</p>
+
+    <div id="chat-container">
+        <div id="messages"></div>
+        <div id="route-display" style="display: none;">
+            <strong>Suggested Route:</strong> <span id="route-text"></span>
+        </div>
+    </div>
+
+    <div id="input-container">
+        <input type="text" id="query-input" placeholder="Ask for directions, restrooms, food, medical help...">
+        <button id="voice-btn" title="Voice input">🎤</button>
+        <button id="send-btn">Send</button>
+    </div>
+
+    <div id="status" class="status ready">Ready</div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/advice';
+        const messagesDiv = document.getElementById('messages');
+        const routeDisplay = document.getElementById('route-display');
+        const routeText = document.getElementById('route-text');
+        const queryInput = document.getElementById('query-input');
+        const voiceBtn = document.getElementById('voice-btn');
+        const sendBtn = document.getElementById('send-btn');
+        const statusDiv = document.getElementById('status');
+
+        let recognition;
+        let synthesis = window.speechSynthesis;
+
+        // Initialize speech recognition if available
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                queryInput.value = transcript;
+                statusDiv.textContent = 'Ready';
+                statusDiv.className = 'status ready';
+            };
+
+            recognition.onend = () => {
+                statusDiv.textContent = 'Ready';
+                statusDiv.className = 'status ready';
+            };
+
+            recognition.onerror = (event) => {
+                statusDiv.textContent = 'Speech recognition error: ' + event.error;
+                statusDiv.className = 'status listening';
+            };
+        } else {
+            voiceBtn.disabled = true;
+            voiceBtn.title = 'Speech recognition not supported in this browser';
+        }
+
+        // Text-to-speech function
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) {
+                console.warn('Speech synthesis not supported');
+                return;
+            }
+            // Cancel any ongoing speech
+            speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9; // Slightly slower for clarity
+            utterance.volume = 0.9;
+            speechSynthesis.speak(utterance);
+        }
+
+        // Add message to chat
+        function addMessage(text, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + (isUser ? 'user-message' : 'bot-message');
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = text;
+
+            const speakerBtn = document.createElement('button');
+            speakerBtn.className = 'speaker-btn';
+            speakerBtn.innerHTML = '🔊';
+            speakerBtn.title = 'Listen';
+            speakerBtn.onclick = () => speakText(text);
+
+            messageDiv.appendChild(contentDiv);
+            if (!isUser) {
+                messageDiv.appendChild(speakerBtn);
+            }
+
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            // If it's a bot message, automatically speak it
+            if (!isUser && speechSynthesis) {
+                // Wait a bit for the UI to update before speaking
+                setTimeout(() => speakText(text), 300);
+            }
+        }
+
+        // Show route if available
+        function showRoute(route) {
+            if (route && route.length > 0) {
+                routeText.textContent = route.join(' → ');
+                routeDisplay.style.display = 'block';
+            } else {
+                routeDisplay.style.display = 'none';
+            }
+        }
+
+        // Send request to API
+        async function sendQuery() {
+            const query = queryInput.value.trim();
+            if (!query) return;
+
+            // Disable input while processing
+            queryInput.disabled = true;
+            sendBtn.disabled = true;
+            voiceBtn.disabled = true;
+            statusDiv.textContent = 'Thinking...';
+            statusDiv.className = 'status listening';
+
+            // Add user message
+            addMessage(query, true);
+            queryInput.value = '';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        language: 'en',
+                        location: 'Gate_A' // Default location, could be made configurable
+                    })
+                });
+
+                const data = await response.json();
+
+                // Add bot message
+                addMessage(data.advice);
+
+                // Show route if available
+                showRoute(data.route);
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('Sorry, I encountered an error. Please try again.');
+            } finally {
+                // Re-enable input
+                queryInput.disabled = false;
+                sendBtn.disabled = false;
+                voiceBtn.disabled = false;
+                statusDiv.textContent = 'Ready';
+                statusDiv.className = 'status ready';
+                queryInput.focus();
+            }
+        }
+
+        // Event listeners
+        sendBtn.addEventListener('click', sendQuery);
+
+        queryInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendQuery();
+            }
+        });
+
+        voiceBtn.addEventListener('click', () => {
+            if (!recognition) {
+                alert('Speech recognition not available in this browser');
+                return;
+            }
+            statusDiv.textContent = 'Listening...';
+            statusDiv.className = 'status listening';
+            recognition.start();
+        });
+
+        // Initialize
+        queryInput.focus();
+    </script>
+</body>
+</html>

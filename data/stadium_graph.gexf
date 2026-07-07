@@ -1,0 +1,309 @@
+<?xml version='1.0' encoding='utf-8'?>
+<gexf xmlns="http://www.gexf.net/1.2draft" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.gexf.net/1.2draft http://www.gexf.net/1.2draft/gexf.xsd" version="1.2">
+  <meta lastmodifieddate="2026-07-06">
+    <creator>NetworkX 3.6.1</creator>
+  </meta>
+  <graph defaultedgetype="undirected" mode="static" name="">
+    <attributes mode="static" class="edge">
+      <attribute id="4" title="base_distance" type="double" />
+    </attributes>
+    <attributes mode="static" class="node">
+      <attribute id="0" title="type" type="string" />
+      <attribute id="1" title="description" type="string" />
+      <attribute id="2" title="x" type="long" />
+      <attribute id="3" title="y" type="long" />
+    </attributes>
+    <nodes>
+      <node id="Gate_A" label="Gate_A">
+        <attvalues>
+          <attvalue for="0" value="gate" />
+          <attvalue for="1" value="Gate A - North Entrance" />
+          <attvalue for="2" value="0" />
+          <attvalue for="3" value="100" />
+        </attvalues>
+      </node>
+      <node id="Gate_B" label="Gate_B">
+        <attvalues>
+          <attvalue for="0" value="gate" />
+          <attvalue for="1" value="Gate B - East Entrance" />
+          <attvalue for="2" value="100" />
+          <attvalue for="3" value="100" />
+        </attvalues>
+      </node>
+      <node id="Gate_C" label="Gate_C">
+        <attvalues>
+          <attvalue for="0" value="gate" />
+          <attvalue for="1" value="Gate C - South Entrance" />
+          <attvalue for="2" value="100" />
+          <attvalue for="3" value="0" />
+        </attvalues>
+      </node>
+      <node id="Gate_D" label="Gate_D">
+        <attvalues>
+          <attvalue for="0" value="gate" />
+          <attvalue for="1" value="Gate D - West Entrance" />
+          <attvalue for="2" value="0" />
+          <attvalue for="3" value="0" />
+        </attvalues>
+      </node>
+      <node id="Concession_1" label="Concession_1">
+        <attvalues>
+          <attvalue for="0" value="concession" />
+          <attvalue for="1" value="Main Concession - Hot Dogs" />
+          <attvalue for="2" value="25" />
+          <attvalue for="3" value="75" />
+        </attvalues>
+      </node>
+      <node id="Concession_2" label="Concession_2">
+        <attvalues>
+          <attvalue for="0" value="concession" />
+          <attvalue for="1" value="East Concession - Beverages" />
+          <attvalue for="2" value="75" />
+          <attvalue for="3" value="75" />
+        </attvalues>
+      </node>
+      <node id="Concession_3" label="Concession_3">
+        <attvalues>
+          <attvalue for="0" value="concession" />
+          <attvalue for="1" value="South Concession - Snacks" />
+          <attvalue for="2" value="75" />
+          <attvalue for="3" value="25" />
+        </attvalues>
+      </node>
+      <node id="Concession_4" label="Concession_4">
+        <attvalues>
+          <attvalue for="0" value="concession" />
+          <attvalue for="1" value="West Concession - Merchandise" />
+          <attvalue for="2" value="25" />
+          <attvalue for="3" value="25" />
+        </attvalues>
+      </node>
+      <node id="Restroom_1" label="Restroom_1">
+        <attvalues>
+          <attvalue for="0" value="restroom" />
+          <attvalue for="1" value="Restroom - North" />
+          <attvalue for="2" value="20" />
+          <attvalue for="3" value="80" />
+        </attvalues>
+      </node>
+      <node id="Restroom_2" label="Restroom_2">
+        <attvalues>
+          <attvalue for="0" value="restroom" />
+          <attvalue for="1" value="Restroom - East" />
+          <attvalue for="2" value="80" />
+          <attvalue for="3" value="80" />
+        </attvalues>
+      </node>
+      <node id="Restroom_3" label="Restroom_3">
+        <attvalues>
+          <attvalue for="0" value="restroom" />
+          <attvalue for="1" value="Restroom - South" />
+          <attvalue for="2" value="80" />
+          <attvalue for="3" value="20" />
+        </attvalues>
+      </node>
+      <node id="Restroom_4" label="Restroom_4">
+        <attvalues>
+          <attvalue for="0" value="restroom" />
+          <attvalue for="1" value="Restroom - West" />
+          <attvalue for="2" value="20" />
+          <attvalue for="3" value="20" />
+        </attvalues>
+      </node>
+      <node id="Section_101" label="Section_101">
+        <attvalues>
+          <attvalue for="0" value="section" />
+          <attvalue for="1" value="Section 101 - Lower Bowl" />
+          <attvalue for="2" value="40" />
+          <attvalue for="3" value="60" />
+        </attvalues>
+      </node>
+      <node id="Section_102" label="Section_102">
+        <attvalues>
+          <attvalue for="0" value="section" />
+          <attvalue for="1" value="Section 102 - Lower Bowl" />
+          <attvalue for="2" value="60" />
+          <attvalue for="3" value="60" />
+        </attvalues>
+      </node>
+      <node id="Section_201" label="Section_201">
+        <attvalues>
+          <attvalue for="0" value="section" />
+          <attvalue for="1" value="Section 201 - Upper Bowl" />
+          <attvalue for="2" value="40" />
+          <attvalue for="3" value="40" />
+        </attvalues>
+      </node>
+      <node id="Section_202" label="Section_202">
+        <attvalues>
+          <attvalue for="0" value="section" />
+          <attvalue for="1" value="Section 202 - Upper Bowl" />
+          <attvalue for="2" value="60" />
+          <attvalue for="3" value="40" />
+        </attvalues>
+      </node>
+    </nodes>
+    <edges>
+      <edge source="Gate_A" target="Concession_1" id="0">
+        <attvalues>
+          <attvalue for="4" value="35.35533905932738" />
+        </attvalues>
+      </edge>
+      <edge source="Gate_A" target="Restroom_1" id="1">
+        <attvalues>
+          <attvalue for="4" value="28.284271247461902" />
+        </attvalues>
+      </edge>
+      <edge source="Gate_A" target="Section_101" id="2">
+        <attvalues>
+          <attvalue for="4" value="56.568542494923804" />
+        </attvalues>
+      </edge>
+      <edge source="Gate_B" target="Concession_2" id="3">
+        <attvalues>
+          <attvalue for="4" value="35.35533905932738" />
+        </attvalues>
+      </edge>
+      <edge source="Gate_B" target="Restroom_2" id="4">
+        <attvalues>
+          <attvalue for="4" value="28.284271247461902" />
+        </attvalues>
+      </edge>
+      <edge source="Gate_B" target="Section_102" id="5">
+        <attvalues>
+          <attvalue for="4" value="56.568542494923804" />
+        </attvalues>
+      </edge>
+      <edge source="Gate_C" target="Concession_3" id="6">
+        <attvalues>
+          <attvalue for="4" value="35.35533905932738" />
+        </attvalues>
+      </edge>
+      <edge source="Gate_C" target="Restroom_3" id="7">
+        <attvalues>
+          <attvalue for="4" value="28.284271247461902" />
+        </attvalues>
+      </edge>
+      <edge source="Gate_C" target="Section_201" id="8">
+        <attvalues>
+          <attvalue for="4" value="72.11102550927978" />
+        </attvalues>
+      </edge>
+      <edge source="Gate_D" target="Concession_4" id="9">
+        <attvalues>
+          <attvalue for="4" value="35.35533905932738" />
+        </attvalues>
+      </edge>
+      <edge source="Gate_D" target="Restroom_4" id="10">
+        <attvalues>
+          <attvalue for="4" value="28.284271247461902" />
+        </attvalues>
+      </edge>
+      <edge source="Gate_D" target="Section_202" id="11">
+        <attvalues>
+          <attvalue for="4" value="72.11102550927978" />
+        </attvalues>
+      </edge>
+      <edge source="Concession_1" target="Section_101" id="12">
+        <attvalues>
+          <attvalue for="4" value="21.213203435596427" />
+        </attvalues>
+      </edge>
+      <edge source="Concession_1" target="Concession_2" id="13">
+        <attvalues>
+          <attvalue for="4" value="50.0" />
+        </attvalues>
+      </edge>
+      <edge source="Concession_1" target="Concession_4" id="14">
+        <attvalues>
+          <attvalue for="4" value="50.0" />
+        </attvalues>
+      </edge>
+      <edge source="Concession_2" target="Section_102" id="15">
+        <attvalues>
+          <attvalue for="4" value="21.213203435596427" />
+        </attvalues>
+      </edge>
+      <edge source="Concession_2" target="Concession_3" id="16">
+        <attvalues>
+          <attvalue for="4" value="50.0" />
+        </attvalues>
+      </edge>
+      <edge source="Concession_3" target="Section_201" id="17">
+        <attvalues>
+          <attvalue for="4" value="38.07886552931954" />
+        </attvalues>
+      </edge>
+      <edge source="Concession_3" target="Concession_4" id="18">
+        <attvalues>
+          <attvalue for="4" value="50.0" />
+        </attvalues>
+      </edge>
+      <edge source="Concession_4" target="Section_202" id="19">
+        <attvalues>
+          <attvalue for="4" value="38.07886552931954" />
+        </attvalues>
+      </edge>
+      <edge source="Restroom_1" target="Section_101" id="20">
+        <attvalues>
+          <attvalue for="4" value="28.284271247461902" />
+        </attvalues>
+      </edge>
+      <edge source="Restroom_1" target="Restroom_2" id="21">
+        <attvalues>
+          <attvalue for="4" value="60.0" />
+        </attvalues>
+      </edge>
+      <edge source="Restroom_1" target="Restroom_4" id="22">
+        <attvalues>
+          <attvalue for="4" value="60.0" />
+        </attvalues>
+      </edge>
+      <edge source="Restroom_2" target="Section_102" id="23">
+        <attvalues>
+          <attvalue for="4" value="28.284271247461902" />
+        </attvalues>
+      </edge>
+      <edge source="Restroom_2" target="Restroom_3" id="24">
+        <attvalues>
+          <attvalue for="4" value="60.0" />
+        </attvalues>
+      </edge>
+      <edge source="Restroom_3" target="Section_201" id="25">
+        <attvalues>
+          <attvalue for="4" value="44.721359549995796" />
+        </attvalues>
+      </edge>
+      <edge source="Restroom_3" target="Restroom_4" id="26">
+        <attvalues>
+          <attvalue for="4" value="60.0" />
+        </attvalues>
+      </edge>
+      <edge source="Restroom_4" target="Section_202" id="27">
+        <attvalues>
+          <attvalue for="4" value="44.721359549995796" />
+        </attvalues>
+      </edge>
+      <edge source="Section_101" target="Section_102" id="28">
+        <attvalues>
+          <attvalue for="4" value="20.0" />
+        </attvalues>
+      </edge>
+      <edge source="Section_101" target="Section_201" id="29">
+        <attvalues>
+          <attvalue for="4" value="20.0" />
+        </attvalues>
+      </edge>
+      <edge source="Section_102" target="Section_202" id="30">
+        <attvalues>
+          <attvalue for="4" value="20.0" />
+        </attvalues>
+      </edge>
+      <edge source="Section_201" target="Section_202" id="31">
+        <attvalues>
+          <attvalue for="4" value="20.0" />
+        </attvalues>
+      </edge>
+    </edges>
+  </graph>
+</gexf>
