@@ -130,6 +130,33 @@ Follow the prompts to link the project and deploy it.
 - The frontend is still a static file and can be served from Vercel as well if you add a static hosting setup later.
 - For production, set environment variables such as a secret key and any future AI provider credentials.
 
+## Deploying to Render (recommended for backend)
+
+Render supports container deployments and is a good fit for this project's backend when you need longer timeouts or background workers (MQTT, threads).
+
+Quick steps:
+
+1. Create a Render account and connect your GitHub repo.
+2. Add a new **Web Service** and select the `Docker` environment.
+3. Point the service to this repository and the `Dockerfile` at the repo root.
+4. Set environment variables in the Render dashboard (Production & Staging):
+
+```text
+GEMINI_API_KEY=<your-key>
+GROQ_API_KEY=<your-key>
+AI_PROVIDER=auto
+```
+
+5. Deploy. Render will build the Docker image and run the container. The app uses `uvicorn src.api:app` to serve the FastAPI app.
+
+Alternative: use the provided `render.yaml` as a template for Render's YAML-based services. Fill in any secret values in the dashboard rather than storing them in the repo.
+
+Notes and tips:
+- The `Dockerfile` installed in this repo uses `uvicorn` to run the app and respects the `$PORT` environment variable provided by Render.
+- For background workers or MQTT bridges, prefer a dedicated service on Render (add another service in the dashboard) so you can run persistent processes.
+- Don't commit `.env` to the repository; use Render's environment variables for secrets.
+
+
 ## Submission checklist
 
 - Ensure the repo is public or shared with the judges

@@ -1,0 +1,15 @@
+venv
+.venv
+__pycache__
+.pytest_cache
+.git
+.gitignore
+.env
+htmlcov
+node_modules
+*.pyc
+*.pyo
+*.pyd
+dist
+build
+coverage.xml

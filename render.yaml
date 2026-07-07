@@ -1,0 +1,19 @@
+# Template Render service configuration for the backend
+# Fill in values or deploy via the Render dashboard using this repo.
+
+services:
+  - type: web
+    name: fanwayfinder-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    # branch: main
+    # plan: starter
+    # Optionally set a health check path if you expose one
+    # healthCheckPath: /health
+    envVars:
+      - key: AI_PROVIDER
+        value: auto
+      # - key: GEMINI_API_KEY
+      #   value: ""
+      # - key: GROQ_API_KEY
+      #   value: ""
