@@ -1,0 +1,132 @@
+> import networkx as nx
+> import json
+> import os
+  
+> def create_stadium_graph() -> nx.Graph:
+>     """Create a sample indoor stadium graph for wayfinding."""
+>     G = nx.Graph()
+  
+      # Add nodes with properties: type, description, x, y coordinates (simplified 2D layout)
+      # Gates
+>     G.add_node('Gate_A', type='gate', description='Gate A - North Entrance', x=0, y=100)
+>     G.add_node('Gate_B', type='gate', description='Gate B - East Entrance', x=100, y=100)
+>     G.add_node('Gate_C', type='gate', description='Gate C - South Entrance', x=100, y=0)
+>     G.add_node('Gate_D', type='gate', description='Gate D - West Entrance', x=0, y=0)
+  
+      # Concessions
+>     G.add_node('Concession_1', type='concession', description='Main Concession - Hot Dogs', x=25, y=75)
+>     G.add_node('Concession_2', type='concession', description='East Concession - Beverages', x=75, y=75)
+>     G.add_node('Concession_3', type='concession', description='South Concession - Snacks', x=75, y=25)
+>     G.add_node('Concession_4', type='concession', description='West Concession - Merchandise', x=25, y=25)
+  
+      # Restrooms
+>     G.add_node('Restroom_1', type='restroom', description='Restroom - North', x=20, y=80)
+>     G.add_node('Restroom_2', type='restroom', description='Restroom - East', x=80, y=80)
+>     G.add_node('Restroom_3', type='restroom', description='Restroom - South', x=80, y=20)
+>     G.add_node('Restroom_4', type='restroom', description='Restroom - West', x=20, y=20)
+  
+      # Sections (seating areas)
+>     G.add_node('Section_101', type='section', description='Section 101 - Lower Bowl', x=40, y=60)
+>     G.add_node('Section_102', type='section', description='Section 102 - Lower Bowl', x=60, y=60)
+>     G.add_node('Section_103', type='section', description='Section 103 - Lower Bowl', x=40, y=40)
+>     G.add_node('Section_104', type='section', description='Section 104 - Lower Bowl', x=60, y=40)
+>     G.add_node('Section_201', type='section', description='Section 201 - Upper Bowl', x=30, y=70)
+>     G.add_node('Section_202', type='section', description='Section 202 - Upper Bowl', x=70, y=70)
+>     G.add_node('Section_203', type='section', description='Section 203 - Upper Bowl', x=30, y=30)
+>     G.add_node('Section_204', type='section', description='Section 204 - Upper Bowl', x=70, y=30)
+  
+      # Medical
+>     G.add_node('Medical_1', type='medical', description='Medical Tent - North', x=10, y=90)
+>     G.add_node('Medical_2', type='medical', description='Medical Tent - South', x=90, y=10)
+  
+      # Add edges with base distance (Euclidean)
+>     def add_edge(u: str, v: str) -> None:
+>         pos_u = (G.nodes[u]['x'], G.nodes[u]['y'])
+>         pos_v = (G.nodes[v]['x'], G.nodes[v]['y'])
+>         dist = ((pos_u[0] - pos_v[0])**2 + (pos_u[1] - pos_v[1])**2)**0.5
+>         G.add_edge(u, v, base_distance=dist)
+  
+      # Connect gates to nearby concessions/restrooms
+>     add_edge('Gate_A', 'Concession_1')
+>     add_edge('Gate_A', 'Restroom_1')
+>     add_edge('Gate_A', 'Section_101')
+>     add_edge('Gate_A', 'Medical_1')
+  
+>     add_edge('Gate_B', 'Concession_2')
+>     add_edge('Gate_B', 'Restroom_2')
+>     add_edge('Gate_B', 'Section_102')
+>     add_edge('Gate_B', 'Section_202')
+  
+>     add_edge('Gate_C', 'Concession_3')
+>     add_edge('Gate_C', 'Restroom_3')
+>     add_edge('Gate_C', 'Section_103')
+>     add_edge('Gate_C', 'Medical_2')
+  
+>     add_edge('Gate_D', 'Concession_4')
+>     add_edge('Gate_D', 'Restroom_4')
+>     add_edge('Gate_D', 'Section_104')
+>     add_edge('Gate_D', 'Section_203')
+  
+      # Connect concessions to sections and restrooms
+>     add_edge('Concession_1', 'Section_101')
+>     add_edge('Concession_1', 'Section_201')
+>     add_edge('Concession_2', 'Section_102')
+>     add_edge('Concession_2', 'Section_202')
+>     add_edge('Concession_3', 'Section_103')
+>     add_edge('Concession_3', 'Section_203')
+>     add_edge('Concession_4', 'Section_104')
+>     add_edge('Concession_4', 'Section_204')
+  
+>     add_edge('Restroom_1', 'Section_101')
+>     add_edge('Restroom_1', 'Section_201')
+>     add_edge('Restroom_2', 'Section_102')
+>     add_edge('Restroom_2', 'Section_202')
+>     add_edge('Restroom_3', 'Section_103')
+>     add_edge('Restroom_3', 'Section_203')
+>     add_edge('Restroom_4', 'Section_104')
+>     add_edge('Restroom_4', 'Section_204')
+  
+      # Connect sections to each other (adjacent)
+>     add_edge('Section_101', 'Section_102')
+>     add_edge('Section_101', 'Section_103')
+>     add_edge('Section_102', 'Section_104')
+>     add_edge('Section_103', 'Section_104')
+>     add_edge('Section_201', 'Section_202')
+>     add_edge('Section_201', 'Section_203')
+>     add_edge('Section_202', 'Section_204')
+>     add_edge('Section_203', 'Section_204')
+  
+      # Connect medical to nearby sections
+>     add_edge('Medical_1', 'Section_101')
+>     add_edge('Medical_1', 'Section_201')
+>     add_edge('Medical_2', 'Section_103')
+>     add_edge('Medical_2', 'Section_203')
+  
+      # Save graph to file
+>     os.makedirs('data', exist_ok=True)
+      # Save as GEXF for Gephi or JSON for custom use
+>     nx.write_gexf(G, 'data/stadium_graph.gexf')
+      # Also save as JSON for easy loading
+>     data = nx.node_link_data(G)
+>     with open('data/stadium_graph.json', 'w') as f:
+>         json.dump(data, f, indent=2)
+  
+>     print(f"Graph saved with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
+  
+      # Also create some knowledge base chunks for RAG
+>     kb_chunks = [
+>         {"id": "faq_1", "text": "Where are the restrooms? Restrooms are located near each gate: Restroom_1 near Gate A, Restroom_2 near Gate B, Restroom_3 near Gate C, Restroom_4 near Gate D."},
+>         {"id": "faq_2", "text": "Where can I buy food? Concessions are located near each gate: Concession_1 (Hot Dogs) near Gate A, Concession_2 (Beverages) near Gate B, Concession_3 (Snacks) near Gate C, Concession_4 (Merchandise) near Gate D."},
+>         {"id": "faq_3", "text": "Where is medical assistance? Medical tents are located near Gate A (Medical_1) and Gate C (Medical_2)."},
+>         {"id": "faq_4", "text": "What sections are available? Lower bowl sections 101-104 and upper bowl sections 201-204."},
+>         {"id": "map_info", "text": "The stadium has four gates: A (North), B (East), C (South), D (West). Each gate has nearby concessions, restrooms, and medical aid."}
+>     ]
+>     with open('data/kb_chunks.json', 'w') as f:
+>         json.dump(kb_chunks, f, indent=2)
+>     print(f"Created {len(kb_chunks)} knowledge base chunks.")
+  
+>     return G  # Return the graph for use in other modules
+  
+  
+> if __name__ == '__main__':
+!     create_stadium_graph()

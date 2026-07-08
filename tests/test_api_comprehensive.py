@@ -5,8 +5,7 @@ import json
 import os
 import secrets
 import tempfile
-from unittest import mock
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -159,7 +158,7 @@ def test_knowledge_base_load_json_decode_error():
 def test_knowledge_base_load_missing_text_field():
     """Test KnowledgeBase handles missing 'text' field."""
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-        json.dump([{"id": "test1"}, {"id": "test2", "text": "Valid chunk"}], f)
+        f.write('[{"id": "test1", "text": "Test"}, {"id": "test2"}]')  # Missing 'text' in second object
         temp_file = f.name
 
     try:
@@ -333,7 +332,6 @@ def test_create_access_token_default_expiration():
 
     # Decode and check
     import jwt
-    from datetime import timedelta
     try:
         decoded = jwt.decode(token, options={"verify_signature": False})
         exp = decoded["exp"]
@@ -388,7 +386,7 @@ def test_verify_token_valid_token():
 
     # Set expiration to 1 hour from now
     exp_time = datetime.now() + timedelta(hours=1)
-    payload = {"sub": "testuser", "role": "admin"}
+    payload = {"sub": "testuser", "role": "admin", "exp": exp_time.timestamp()}
     # Use the actual secret from config
     token = jwt.encode(payload, Config.SECRET_KEY, algorithm="HS256")
 
@@ -410,3 +408,4 @@ def test_verify_token_exception_during_decode():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+

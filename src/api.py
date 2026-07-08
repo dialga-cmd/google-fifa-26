@@ -19,6 +19,30 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel, Field, field_validator
 
+# Try to import google genai, but make it optional
+try:
+    from google import genai as google_genai
+except ImportError:  # pragma: no cover - depends on environment
+    google_genai = None
+
+# Import the rest of the dependencies
+import uvicorn
+from fastapi import FastAPI, HTTPException, Depends, status, Request
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from jose import jwt, JWTError
+
+if not hasattr(jwt, "JWTError"):
+    jwt.JWTError = JWTError
+
+import networkx as nx
+import paho.mqtt.client as mqtt
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
 
 def load_env_file() -> None:
     dotenv_path = Path(__file__).resolve().parent.parent / '.env'
@@ -43,27 +67,6 @@ def load_env_file() -> None:
 
 
 load_env_file()
-
-try:
-    from google import genai as google_genai
-except ImportError:  # pragma: no cover - depends on environment
-    google_genai = None
-
-import uvicorn
-from fastapi import FastAPI, HTTPException, Depends, status, Request
-from fastapi.responses import HTMLResponse, FileResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from jose import jwt, JWTError
-
-if not hasattr(jwt, "JWTError"):
-    jwt.JWTError = JWTError
-import networkx as nx
-import paho.mqtt.client as mqtt
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -168,7 +171,7 @@ class AdviceRequest(BaseModel):
     def validate_stadium(cls, v):
         if not v or v not in Config.FIFA_STADIUMS:
             raise ValueError(f"Stadium must be one of the FIFA 2026 venues: {sorted(Config.FIFA_STADIUMS)}")
-        return v
+            return v
 
 class AdviceResponse(BaseModel):
     advice: str
@@ -464,7 +467,7 @@ def verify_token(token: str) -> Optional[TokenData]:
             exp=payload.get("exp")
         )
         return token_data
-    except JWTError as e:
+    except jwt.JWTError as e:
         logger.warning(f"JWT validation failed: {e}")
         return None
     except Exception as e:
@@ -571,6 +574,7 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown
     mqtt_handler.stop()
+
 
 # FastAPI app
 app = FastAPI(
@@ -709,7 +713,7 @@ async def get_advice(  # noqa: C901
             location = Config.DEFAULT_LOCATION
 
         context_str = "\n".join(knowledge_base.chunk_texts)
-        
+
         # Prepare prompt for the AI provider
         prompt = (
             f"Current stadium: {stadium}\n"
@@ -803,6 +807,7 @@ async def get_advice(  # noqa: C901
             detail="Internal server error while processing your request."
         )
 
+
 def determine_target_type(query: str) -> Optional[str]:
     """Fallback logic to determine target type."""
     q = query.lower()
@@ -810,23 +815,23 @@ def determine_target_type(query: str) -> Optional[str]:
     def word_in_query(word):
         pattern = r'(?<!\w)' + re.escape(word) + r'(s|ing|ed)?(?!\w)'
         return bool(re.search(pattern, q))
-    
+
     section_words = ["section", "seat", "seats", "sit", "sitting", "row", "rows"]
-    if any(word_in_query(word) for word in section_words): 
+    if any(word_in_query(word) for word in section_words):
         return "section"
-    
+
     restroom_words = ["restroom", "bathroom", "toilet", "washroom"]
-    if any(word_in_query(word) for word in restroom_words): 
+    if any(word_in_query(word) for word in restroom_words):
         return "restroom"
-    
+
     food_words = ["food", "eat", "drink", "concession", "hungry", "thirsty", "snack", "meal"]
-    if any(word_in_query(word) for word in food_words): 
+    if any(word_in_query(word) for word in food_words):
         return "concession"
-    
+
     medical_words = ["medical", "help", "tent", "doctor", "nurse", "first", "aid", "emergency"]
-    if any(word_in_query(word) for word in medical_words): 
+    if any(word_in_query(word) for word in medical_words):
         return "medical"
-    
+
     return None
 
 

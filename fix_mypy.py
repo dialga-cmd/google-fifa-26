@@ -1,5 +1,4 @@
 import re
-import sys
 import subprocess
 
 out = subprocess.run(["venv/bin/mypy", "src/"], capture_output=True, text=True).stdout

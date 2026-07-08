@@ -4,7 +4,6 @@ Unit tests for FanWayfinder components
 import json
 import tempfile
 import os
-from unittest import mock
 
 # Import our modules
 import sys

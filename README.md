@@ -91,44 +91,18 @@ fan_wayfinder/
 └── vercel.json
 ```
 
-## Deploying to Vercel
+## Deployment
 
-Vercel can host a lightweight serverless API for this project.
+This project is deployed to Render (see below). Vercel-specific files and configuration were removed from the repository after migrating the backend to Render.
 
-### Optional AI configuration
+If you previously used Vercel and have environment variables there, make sure to re-add them to Render or your chosen host:
 
-If you want the app to use a real AI provider for richer responses, set one of these environment variables in your deployment settings:
-
-```bash
-export GEMINI_API_KEY="your-gemini-key"
-export GROQ_API_KEY="your-groq-key"
-export AI_PROVIDER="auto"
+```text
+GEMINI_API_KEY=<your-key>
+GROQ_API_KEY=<your-key>
+AI_PROVIDER=auto
 ```
 
-The app will use Gemini first when available, then Groq, and otherwise fall back to the built-in local logic.
-
-### Prerequisites
-
-- A Vercel account
-- The Vercel CLI installed locally
-
-```bash
-npm install -g vercel
-```
-
-### Deploy
-
-```bash
-vercel
-```
-
-Follow the prompts to link the project and deploy it.
-
-### Notes
-
-- The Vercel entrypoint uses [api/advice.py](api/advice.py).
-- The frontend is still a static file and can be served from Vercel as well if you add a static hosting setup later.
-- For production, set environment variables such as a secret key and any future AI provider credentials.
 
 ## Deploying to Render (recommended for backend)
 

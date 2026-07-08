@@ -4,47 +4,47 @@ import os
 
 def create_stadium_graph() -> nx.Graph:
     """Create a sample indoor stadium graph for wayfinding."""
-    G = nx.Graph()
+    graph = nx.Graph()
 
     # Add nodes with properties: type, description, x, y coordinates (simplified 2D layout)
     # Gates
-    G.add_node('Gate_A', type='gate', description='Gate A - North Entrance', x=0, y=100)
-    G.add_node('Gate_B', type='gate', description='Gate B - East Entrance', x=100, y=100)
-    G.add_node('Gate_C', type='gate', description='Gate C - South Entrance', x=100, y=0)
-    G.add_node('Gate_D', type='gate', description='Gate D - West Entrance', x=0, y=0)
+    graph.add_node('Gate_A', type='gate', description='Gate A - North Entrance', x=0, y=100)
+    graph.add_node('Gate_B', type='gate', description='Gate B - East Entrance', x=100, y=100)
+    graph.add_node('Gate_C', type='gate', description='Gate C - South Entrance', x=100, y=0)
+    graph.add_node('Gate_D', type='gate', description='Gate D - West Entrance', x=0, y=0)
 
     # Concessions
-    G.add_node('Concession_1', type='concession', description='Main Concession - Hot Dogs', x=25, y=75)
-    G.add_node('Concession_2', type='concession', description='East Concession - Beverages', x=75, y=75)
-    G.add_node('Concession_3', type='concession', description='South Concession - Snacks', x=75, y=25)
-    G.add_node('Concession_4', type='concession', description='West Concession - Merchandise', x=25, y=25)
+    graph.add_node('Concession_1', type='concession', description='Main Concession - Hot Dogs', x=25, y=75)
+    graph.add_node('Concession_2', type='concession', description='East Concession - Beverages', x=75, y=75)
+    graph.add_node('Concession_3', type='concession', description='South Concession - Snacks', x=75, y=25)
+    graph.add_node('Concession_4', type='concession', description='West Concession - Merchandise', x=25, y=25)
 
     # Restrooms
-    G.add_node('Restroom_1', type='restroom', description='Restroom - North', x=20, y=80)
-    G.add_node('Restroom_2', type='restroom', description='Restroom - East', x=80, y=80)
-    G.add_node('Restroom_3', type='restroom', description='Restroom - South', x=80, y=20)
-    G.add_node('Restroom_4', type='restroom', description='Restroom - West', x=20, y=20)
+    graph.add_node('Restroom_1', type='restroom', description='Restroom - North', x=20, y=80)
+    graph.add_node('Restroom_2', type='restroom', description='Restroom - East', x=80, y=80)
+    graph.add_node('Restroom_3', type='restroom', description='Restroom - South', x=80, y=20)
+    graph.add_node('Restroom_4', type='restroom', description='Restroom - West', x=20, y=20)
 
     # Sections (seating areas)
-    G.add_node('Section_101', type='section', description='Section 101 - Lower Bowl', x=40, y=60)
-    G.add_node('Section_102', type='section', description='Section 102 - Lower Bowl', x=60, y=60)
-    G.add_node('Section_103', type='section', description='Section 103 - Lower Bowl', x=40, y=40)
-    G.add_node('Section_104', type='section', description='Section 104 - Lower Bowl', x=60, y=40)
-    G.add_node('Section_201', type='section', description='Section 201 - Upper Bowl', x=30, y=70)
-    G.add_node('Section_202', type='section', description='Section 202 - Upper Bowl', x=70, y=70)
-    G.add_node('Section_203', type='section', description='Section 203 - Upper Bowl', x=30, y=30)
-    G.add_node('Section_204', type='section', description='Section 204 - Upper Bowl', x=70, y=30)
+    graph.add_node('Section_101', type='section', description='Section 101 - Lower Bowl', x=40, y=60)
+    graph.add_node('Section_102', type='section', description='Section 102 - Lower Bowl', x=60, y=60)
+    graph.add_node('Section_103', type='section', description='Section 103 - Lower Bowl', x=40, y=40)
+    graph.add_node('Section_104', type='section', description='Section 104 - Lower Bowl', x=60, y=40)
+    graph.add_node('Section_201', type='section', description='Section 201 - Upper Bowl', x=30, y=70)
+    graph.add_node('Section_202', type='section', description='Section 202 - Upper Bowl', x=70, y=70)
+    graph.add_node('Section_203', type='section', description='Section 203 - Upper Bowl', x=30, y=30)
+    graph.add_node('Section_204', type='section', description='Section 204 - Upper Bowl', x=70, y=30)
 
     # Medical
-    G.add_node('Medical_1', type='medical', description='Medical Tent - North', x=10, y=90)
-    G.add_node('Medical_2', type='medical', description='Medical Tent - South', x=90, y=10)
+    graph.add_node('Medical_1', type='medical', description='Medical Tent - North', x=10, y=90)
+    graph.add_node('Medical_2', type='medical', description='Medical Tent - South', x=90, y=10)
 
     # Add edges with base distance (Euclidean)
     def add_edge(u: str, v: str) -> None:
-        pos_u = (G.nodes[u]['x'], G.nodes[u]['y'])
-        pos_v = (G.nodes[v]['x'], G.nodes[v]['y'])
+        pos_u = (graph.nodes[u]['x'], graph.nodes[u]['y'])
+        pos_v = (graph.nodes[v]['x'], graph.nodes[v]['y'])
         dist = ((pos_u[0] - pos_v[0])**2 + (pos_u[1] - pos_v[1])**2)**0.5
-        G.add_edge(u, v, base_distance=dist)
+        graph.add_edge(u, v, base_distance=dist)
 
     # Connect gates to nearby concessions/restrooms
     add_edge('Gate_A', 'Concession_1')
@@ -105,13 +105,13 @@ def create_stadium_graph() -> nx.Graph:
     # Save graph to file
     os.makedirs('data', exist_ok=True)
     # Save as GEXF for Gephi or JSON for custom use
-    nx.write_gexf(G, 'data/stadium_graph.gexf')
+    nx.write_gexf(graph, 'data/stadium_graph.gexf')
     # Also save as JSON for easy loading
-    data = nx.node_link_data(G)
+    data = nx.node_link_data(graph)
     with open('data/stadium_graph.json', 'w') as f:
         json.dump(data, f, indent=2)
 
-    print(f"Graph saved with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
+    print(f"Graph saved with {graph.number_of_nodes()} nodes and {graph.number_of_edges()} edges")
 
     # Also create some knowledge base chunks for RAG
     kb_chunks = [
@@ -125,7 +125,7 @@ def create_stadium_graph() -> nx.Graph:
         json.dump(kb_chunks, f, indent=2)
     print(f"Created {len(kb_chunks)} knowledge base chunks.")
 
-    return G  # Return the graph for use in other modules
+    return graph  # Return the graph for use in other modules
 
 
 if __name__ == '__main__':

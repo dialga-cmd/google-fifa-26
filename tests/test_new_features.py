@@ -1,16 +1,12 @@
 """
 Tests for new features: authentication, caching, etc.
 """
-import json
-from unittest import mock
-from unittest.mock import Mock, patch
 
 import sys
 sys.path.insert(0, 'src')
 
 from fastapi.testclient import TestClient
-from api import app, create_access_token, verify_token, knowledge_base, stadium_graph, advice_cache
-
+from api import app, create_access_token, verify_token
 
 client = TestClient(app)
 
@@ -54,16 +50,17 @@ def test_verify_token():
 
 
 def test_advice_endpoint_with_token():
-    """Test the advice endpoint with a token."""
-    # First, get a token
+    """Test the advice endpoint with a valid token."""
+    # First get a token
     login_response = client.post("/token", json={
         "username": "testuser",
         "password": "testpass"
     })
     assert login_response.status_code == 200
-    token = login_response.json()["access_token"]
+    token_data = login_response.json()
+    access_token = token_data["access_token"]
 
-    # Now call the advice endpoint with the token
+    # Make request with token
     response = client.post(
         "/advice",
         json={
@@ -71,17 +68,17 @@ def test_advice_endpoint_with_token():
             "language": "en",
             "location": "Gate_A"
         },
-        headers={"Authorization": f"Bearer {token}"}
+        headers={"Authorization": f"Bearer {access_token}"}
     )
     assert response.status_code == 200
     data = response.json()
     assert "advice" in data
-    assert isinstance(data["advice"], str)
-    assert len(data["advice"]) > 0
+    assert "route" in data
+    assert data["congestion_aware"]
 
 
 def test_advice_endpoint_without_token():
-    """Test the advice endpoint without a token (should still work for hackathon)."""
+    """Test the advice endpoint without a token (should work for hackathon)."""
     response = client.post(
         "/advice",
         json={
@@ -93,13 +90,12 @@ def test_advice_endpoint_without_token():
     assert response.status_code == 200
     data = response.json()
     assert "advice" in data
-    assert isinstance(data["advice"], str)
-    assert len(data["advice"]) > 0
+    assert "route" in data
+    assert data["congestion_aware"]
 
 
 def test_advice_cache():
-    """Test the advice caching mechanism."""
-    # Clear the cache first (not directly accessible, but we can make a request and then check if second request is faster)
+    """Test the advice cache by making two identical requests."""
     # We'll test by making two identical requests and checking that the advice is the same.
     # Note: We cannot directly inspect the cache, but we can rely on the fact that the same query returns the same advice.
 
@@ -153,10 +149,9 @@ def test_frontend_assets_served():
 
     css_response = client.get("/style.css")
     assert css_response.status_code == 200
-    assert "font-family" in css_response.text.lower()
+    assert "font-family" in css_response.text
 
 
 if __name__ == "__main__":
-    # Run tests manually if needed
     import pytest
     pytest.main([__file__, "-v"])
