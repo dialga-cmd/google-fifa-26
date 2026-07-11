@@ -3,5 +3,8 @@
   {"id": "faq_2", "text": "Where can I buy food? Concessions are located near each gate: Concession_1 (Hot Dogs) near Gate A, Concession_2 (Beverages) near Gate B, Concession_3 (Snacks) near Gate C, Concession_4 (Merchandise) near Gate D."},
   {"id": "faq_3", "text": "Where is medical assistance? Medical tents are located near Gate A (Medical_1) and Gate C (Medical_2)."},
   {"id": "faq_4", "text": "What sections are available? Lower bowl sections 101-104 and upper bowl sections 201-204."},
-  {"id": "map_info", "text": "The stadium has four gates: A (North), B (East), C (South), D (West). Each gate has nearby concessions, restrooms, and medical aid."}
+  {"id": "map_info", "text": "The stadium has four gates: A (North), B (East), C (South), D (West). Each gate has nearby concessions, restrooms, and medical aid."},
+  {"id": "faq_5", "text": "Where is the wheelchair access? Wheelchair accessible routes and elevators are located at Gate B and Gate D. Sensory rooms are located near Section 102."},
+  {"id": "faq_6", "text": "Where can I find public transit or shuttles? Shuttle bus drop-offs are near Gate A. Public transit stations are outside Gate C."},
+  {"id": "faq_7", "text": "Where are the recycling bins or water stations? Water refill stations and recycling bins are located next to every restroom and concession stand as part of our sustainability initiative."}
 ]

@@ -28,7 +28,6 @@ When answering:
 
 Return your answer in valid JSON with two fields:
 - "advice": a helpful response string
-- "target_type": one of: gate, concession, restroom, section, medical, or none
-
+- "target_type": one of: gate, concession, restroom, section, medical, transport, accessibility, sustainability, or none
 Example output:
 {"advice": "Please head to Gate A and follow the signs to the nearest restroom.", "target_type": "restroom"}

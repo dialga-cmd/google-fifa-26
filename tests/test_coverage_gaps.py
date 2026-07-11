@@ -468,31 +468,31 @@ class TestJWTCoverage:
 
     def test_encode_non_hs256(self):
         """Test encode with non-HS256 algorithm (line 59)."""
-        from src.jwt import encode, JWTError
+        from jwt_shim import encode, JWTError
         with pytest.raises(JWTError, match="Only HS256 is supported"):
             encode({"sub": "test"}, key="secret", algorithm="RS256")
 
     def test_decode_invalid_format(self):
         """Test decode with invalid token format (line 75)."""
-        from src.jwt import decode, JWTError
+        from jwt_shim import decode, JWTError
         with pytest.raises(JWTError, match="Invalid token format"):
             decode("invalid.token")
 
     def test_decode_verify_signature_no_key(self):
         """Test decode with verify_signature=True but no key (lines 85-88)."""
-        from src.jwt import decode, JWTError
+        from jwt_shim import decode, JWTError
         with pytest.raises(JWTError, match="No key provided for signature verification"):
             decode("header.payload.signature", options={"verify_signature": True})
 
     def test_decode_signature_verification_failed(self):
         """Test decode with signature mismatch (lines 91-92)."""
-        from src.jwt import decode, JWTError
+        from jwt_shim import decode, JWTError
         with pytest.raises(JWTError, match="Signature verification failed"):
             decode("header.payload.wrongsig", options={"verify_signature": True}, key="secret")
 
     def test_decode_payload_decode_failure(self):
         """Test decode with payload decode failure (lines 97-98)."""
-        from src.jwt import decode, JWTError
+        from jwt_shim import decode, JWTError
         # Create token with invalid base64 payload - need valid format (2 dots) but invalid payload
         with pytest.raises(JWTError, match="Invalid token format"):
             decode("header.!!!invalid!!!signature", options={"verify_signature": False})

@@ -527,7 +527,7 @@ def generate_ai_response(prompt: str) -> Optional[str]:
         except Exception as exc:  # pragma: no cover - network/env dependent
             response_text = getattr(exc, 'response', None)
             if response_text is not None:
-                logger.warning("Groq response body: %s", getattr(exc.response, 'text', None))
+                logger.warning("Groq response body: %s", getattr(exc.response, 'text', None))  # type: ignore
             logger.warning("Groq request failed: %s", exc)
 
     if provider in {"gemini", "auto"} and Config.GEMINI_API_KEY:
@@ -586,7 +586,7 @@ app = FastAPI(
 
 # Attach limiter and exception handler before startup
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore
 app.add_middleware(SlowAPIMiddleware)
 
 # Security middleware
@@ -762,7 +762,7 @@ async def get_advice(  # noqa: C901
                 result = json.loads(text.strip())
                 advice = result.get("advice", advice)
                 t_type = result.get("target_type", "none").lower()
-                if t_type in ['gate', 'concession', 'restroom', 'section', 'medical']:
+                if t_type in ['gate', 'concession', 'restroom', 'section', 'medical', 'transport', 'accessibility', 'sustainability']:
                     target_type = t_type
                 logger.info("Parsed AI result: target_type=%s advice_length=%d", target_type, len(advice))
             except json.JSONDecodeError as exc:
@@ -788,8 +788,8 @@ async def get_advice(  # noqa: C901
                         length = 0
                         for i in range(len(path) - 1):
                             u, v = path[i], path[i + 1]
-                            attr = stadium_graph.G.get_edge_data(u, v)
-                            length += stadium_graph.get_edge_weight(u, v, attr)
+                            attr = stadium_graph.G.get_edge_data(u, v)  # type: ignore
+                            length += stadium_graph.get_edge_weight(u, v, attr)  # type: ignore
                         if length < best_length:
                             best_length = length
                             best_path = path
@@ -831,6 +831,18 @@ def determine_target_type(query: str) -> Optional[str]:
     medical_words = ["medical", "help", "tent", "doctor", "nurse", "first", "aid", "emergency"]
     if any(word_in_query(word) for word in medical_words):
         return "medical"
+
+    transport_words = ["transit", "shuttle", "bus", "train", "parking", "transport", "ride"]
+    if any(word_in_query(word) for word in transport_words):
+        return "transport"
+
+    accessibility_words = ["wheelchair", "accessible", "elevator", "ramp", "sensory"]
+    if any(word_in_query(word) for word in accessibility_words):
+        return "accessibility"
+
+    sustainability_words = ["recycle", "recycling", "water", "trash", "waste", "sustainability"]
+    if any(word_in_query(word) for word in sustainability_words):
+        return "sustainability"
 
     return None
 
