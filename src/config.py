@@ -2,13 +2,10 @@
 FanWayfinder Configuration - Extracted from src/api.py
 """
 
-import json
 import logging
 import os
-import re
+import secrets
 from pathlib import Path
-from typing import Dict, List, Optional, Set
-from pydantic import BaseModel, Field, field_validator
 
 logger = logging.getLogger(__name__)
 
