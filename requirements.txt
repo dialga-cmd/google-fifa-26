@@ -8,8 +8,7 @@ python-jose[cryptography]>=3.3.0
 redis>=5.0.0
 slowapi>=0.1.8
 google-genai>=0.3.0
-
-# Development / testing dependencies (also install via pip install -e .[dev])
+PyJWT>=2.8.0
 pytest>=7.4.0
 pytest-asyncio>=0.21.1
 pytest-cov>=4.1.0
