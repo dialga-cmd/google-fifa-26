@@ -26,15 +26,15 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: requirements.txt
+          cache-dependency-path: requirements-dev.txt
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          # httpx is required by FastAPI's TestClient but is declared only in the
-          # [dev] extra (pyproject.toml), not requirements.txt -- install it for CI.
-          pip install httpx
+          # Install from the hashed lockfile so CI matches the committed lock exactly.
+          # requirements-dev.txt = runtime + dev tools (ruff/mypy/pytest); httpx is a
+          # declared runtime dependency now, so no separate install is needed.
+          pip install --require-hashes -r requirements-dev.txt
 
       - name: Lint (ruff)
         run: ruff check .
