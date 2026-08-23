@@ -11,18 +11,13 @@ import threading
 import time
 import re
 from pathlib import Path
+from types import ModuleType
 from typing import Dict, List, Tuple, Optional, Set
 import httpx
 from functools import lru_cache
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel, Field, field_validator
-
-# Try to import google genai, but make it optional
-try:
-    from google import genai as google_genai
-except ImportError:  # pragma: no cover - depends on environment
-    google_genai = None
 
 # Import the rest of the dependencies
 import uvicorn
@@ -41,6 +36,17 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+
+# Try to import google genai, but keep it optional. Placed after the other
+# imports so the module-level Optional[ModuleType] declaration below does not
+# trip ruff's E402 (module-level import not at top of file). The bare
+# annotation is required so mypy accepts both the imported module and the
+# None fallback (see PR: fixes CI-only mypy [assignment] errors).
+google_genai: Optional[ModuleType]
+try:
+    from google import genai as google_genai
+except ImportError:  # pragma: no cover - depends on environment
+    google_genai = None
 
 
 def load_env_file() -> None:
@@ -484,11 +490,11 @@ def generate_ai_response(prompt: str) -> Optional[str]:
             else:
                 logger.info("Trying Gemini provider")
                 client = google_genai.Client(api_key=Config.GEMINI_API_KEY)
-                response = client.models.generate_content(
+                gemini_response = client.models.generate_content(
                     model="gemini-2.5-flash",
                     contents=full_prompt,
                 )
-                result = getattr(response, "text", None)
+                result = getattr(gemini_response, "text", None)
                 logger.info("Gemini response received")
                 return result
         except Exception as exc:  # pragma: no cover - network/env dependent
