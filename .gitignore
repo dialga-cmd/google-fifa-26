@@ -15,6 +15,11 @@ ENV/
 htmlcov/
 .coverage.*
 *.cover
+# coverage annotate output uses a comma suffix (e.g. api.py,cover), which *.cover above does NOT match
+*,cover
+
+# Backup files (editor/manual .backup copies)
+*.backup
 
 # Type checking and linting
 .mypy_cache/
