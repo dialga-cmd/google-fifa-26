@@ -50,6 +50,15 @@ exactly:
 pip install --require-hashes -r requirements-dev.txt
 ```
 
+A native [`uv`](https://docs.astral.sh/uv/) lockfile, `uv.lock`, is also
+committed. It is **not** used by CI or Docker — those install from
+`requirements.txt` / `requirements-dev.txt` with `pip` (see the `Dockerfile`
+and `.github/workflows/ci.yml`). `uv.lock` is provided as a convenience for
+contributors who use `uv` (`uv sync`) and for dependency-scanning tools that
+detect the native lockfile format. The three files are kept consistent from the
+same `pyproject.toml`, and CI fails if any of them drift out of sync (see the
+`Lockfiles in sync with pyproject` job).
+
 ### 4. Configure environment variables
 
 Copy the template and fill in any values you need. All variables are optional
