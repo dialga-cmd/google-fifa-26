@@ -50,13 +50,28 @@ exactly:
 pip install --require-hashes -r requirements-dev.txt
 ```
 
-### 4. Generate sample data
+### 4. Configure environment variables
+
+Copy the template and fill in any values you need. All variables are optional
+for local development (sensible defaults are baked in), so this step can be
+skipped when just trying things out:
+
+```bash
+cp .env.example .env
+```
+
+[.env.example](.env.example) documents every environment variable the app
+reads, grouped by concern (AI keys, security/JWT, Redis, rate limiting, MQTT,
+data files). `.env` is gitignored — never commit real secrets. `SECRET_KEY` is
+the only variable that is strictly required, and only when `ENVIRONMENT=production`.
+
+### 5. Generate sample data
 
 ```bash
 python3 src/generate_graph.py
 ```
 
-### 5. Run the backend
+### 6. Run the backend
 
 ```bash
 python3 src/api.py
@@ -66,7 +81,7 @@ The API will be available at:
 - http://localhost:8000/docs
 - http://localhost:8000/advice
 
-### 6. Open the frontend
+### 7. Open the frontend
 
 Open the file [frontend/index.html](frontend/index.html) in a browser, or serve the folder with a simple static server if preferred.
 
@@ -104,7 +119,7 @@ fan_wayfinder/
 
 This project is deployed to Render (see below). Vercel-specific files and configuration were removed from the repository after migrating the backend to Render.
 
-If you previously used Vercel and have environment variables there, make sure to re-add them to Render or your chosen host:
+If you previously used Vercel and have environment variables there, make sure to re-add them to Render or your chosen host. The full list of variables the app understands is documented in [.env.example](.env.example); the AI-related ones are:
 
 ```text
 GEMINI_API_KEY=<your-key>
@@ -122,9 +137,11 @@ Quick steps:
 1. Create a Render account and connect your GitHub repo.
 2. Add a new **Web Service** and select the `Docker` environment.
 3. Point the service to this repository and the `Dockerfile` at the repo root.
-4. Set environment variables in the Render dashboard (Production & Staging):
+4. Set environment variables in the Render dashboard (Production & Staging). See [.env.example](.env.example) for the complete list; at minimum set a strong `SECRET_KEY` (required when `ENVIRONMENT=production`) plus your AI keys:
 
 ```text
+ENVIRONMENT=production
+SECRET_KEY=<a-strong-random-value>
 GEMINI_API_KEY=<your-key>
 GROQ_API_KEY=<your-key>
 AI_PROVIDER=auto

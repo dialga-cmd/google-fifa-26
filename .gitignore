@@ -34,6 +34,8 @@ dist/
 # Environment files
 .env
 .env.*
+# ...but keep the committed placeholder template trackable
+!.env.example
 
 # IDE/editor settings
 .vscode/
