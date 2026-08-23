@@ -41,6 +41,15 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+Both `requirements.txt` (runtime) and `requirements-dev.txt` (runtime + dev
+tools) are hash-pinned lockfiles. If you're contributing — running the tests,
+`ruff`, or `mypy` locally — install the dev lockfile instead. It matches CI
+exactly:
+
+```bash
+pip install --require-hashes -r requirements-dev.txt
+```
+
 ### 4. Generate sample data
 
 ```bash
