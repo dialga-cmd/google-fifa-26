@@ -10,7 +10,6 @@ import os
 import threading
 import time
 import re
-from pathlib import Path
 from types import ModuleType
 from typing import Dict, List, Tuple, Optional, Set
 import httpx
@@ -48,30 +47,6 @@ try:
 except ImportError:  # pragma: no cover - depends on environment
     google_genai = None
 
-
-def load_env_file() -> None:
-    dotenv_path = Path(__file__).resolve().parent.parent / '.env'
-    if not dotenv_path.exists():
-        return
-
-    logger = logging.getLogger(__name__)
-    try:
-        with open(dotenv_path, 'r', encoding='utf-8') as handle:
-            for line in handle:
-                line = line.strip()
-                if not line or line.startswith('#') or '=' not in line:
-                    continue
-                key, value = line.split('=', 1)
-                key = key.strip()
-                value = value.strip().strip('"').strip("'")
-                if key and key not in os.environ:
-                    os.environ[key] = value
-        logger.info('Loaded environment variables from %s', dotenv_path)
-    except Exception as exc:
-        logger.warning('Could not load .env file: %s', exc)
-
-
-load_env_file()
 
 # Configure logging
 logging.basicConfig(

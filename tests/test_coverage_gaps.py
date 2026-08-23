@@ -13,8 +13,8 @@ import pytest
 # Add src to path
 sys.path.insert(0, 'src')
 
+from config import load_env_file
 from api import (
-    load_env_file,
     KnowledgeBase,
     StadiumGraph,
     AdviceCache,
@@ -38,13 +38,13 @@ class TestLoadEnvFile:
 
     def test_load_env_file_not_exists(self, tmp_path):
         """Test load_env_file when .env doesn't exist (line 26)."""
-        with patch('api.Path') as mock_path:
+        with patch('config.Path') as mock_path:
             mock_path.return_value.resolve.return_value.parent.parent = tmp_path
             load_env_file()
 
     def test_load_env_file_with_content(self, tmp_path):
         """Test load_env_file with valid content (lines 34, 37-40)."""
-        with patch('api.Path') as mock_path_class:
+        with patch('config.Path') as mock_path_class:
             mock_path = MagicMock()
             mock_path.resolve.return_value.parent.parent = tmp_path
             mock_path_class.return_value = mock_path
@@ -57,7 +57,7 @@ class TestLoadEnvFile:
     def test_load_env_file_exception_handling(self):
         """Test load_env_file handles exceptions (lines 41-42)."""
         from pathlib import Path
-        with patch('api.Path') as mock_path_class:
+        with patch('config.Path') as mock_path_class:
             mock_path = MagicMock()
             mock_path.resolve.return_value.parent.parent = Path('/tmp')
             mock_path_class.return_value = mock_path
