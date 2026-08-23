@@ -4,10 +4,18 @@ FanWayfinder Configuration - Extracted from src/api.py
 
 import logging
 import os
-import secrets
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# Fixed, obviously-insecure key used ONLY outside production so local dev and
+# the test suite can sign and verify JWTs deterministically. Production MUST set
+# the SECRET_KEY environment variable to a strong, unique value; the startup
+# check Config.validate_production_config() refuses to boot otherwise. We
+# deliberately do NOT generate a random fallback here: a per-process random key
+# silently invalidates tokens across restarts and workers and masks the
+# missing-configuration error.
+_DEV_SECRET_KEY = "dev-insecure-do-not-use-in-production"
 
 
 def load_env_file() -> None:
@@ -36,7 +44,6 @@ load_env_file()
 
 
 class Config:
-    _DEFAULT_SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_hex(32))
     MQTT_BROKER = os.getenv("MQTT_BROKER", "test.mosquitto.org")
     MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
     MQTT_TOPIC = os.getenv("MQTT_TOPIC", "stadium/congestion/edge/#")
@@ -49,7 +56,7 @@ class Config:
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
     AI_PROVIDER = os.getenv("AI_PROVIDER", "auto")
     # Security settings
-    SECRET_KEY = os.getenv("SECRET_KEY", _DEFAULT_SECRET_KEY)  # fallback for dev only
+    SECRET_KEY = os.getenv("SECRET_KEY", _DEV_SECRET_KEY)  # dev-only; production must set env
     ACCESS_TOKEN_EXPIRE_MINUTES = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
     )
@@ -84,13 +91,19 @@ class Config:
     DEFAULT_STADIUM = "MetLife Stadium"
 
     @classmethod
-    def validate_production_config(cls):
-        """Validate that required configuration is set for production."""
-        if os.getenv("ENVIRONMENT", "development").lower() == "production":
-            if "SECRET_KEY" not in os.environ or not os.getenv("SECRET_KEY"):
-                if cls.SECRET_KEY != cls._DEFAULT_SECRET_KEY:
-                    raise ValueError("SECRET_KEY must be explicitly set in production")
-                raise ValueError("Missing required environment variables for production: SECRET_KEY")
-            secret_key = os.getenv("SECRET_KEY") or cls.SECRET_KEY
-            if not secret_key or secret_key in {"mocked_default", "mock-secret-key"}:
-                raise ValueError("SECRET_KEY must be explicitly set in production")
+    def validate_production_config(cls) -> None:
+        """Fail fast when SECRET_KEY is missing or left at the insecure dev
+        default while running in production. Invoked at app startup (lifespan)."""
+        if os.getenv("ENVIRONMENT", "development").lower() != "production":
+            return
+        secret = os.getenv("SECRET_KEY")
+        if not secret:
+            raise ValueError(
+                "Missing required environment variables for production: "
+                "SECRET_KEY. SECRET_KEY must be explicitly set in production."
+            )
+        if secret == _DEV_SECRET_KEY:
+            raise ValueError(
+                "SECRET_KEY must be explicitly set in production; the insecure "
+                "development default is not allowed."
+            )
