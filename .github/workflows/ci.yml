@@ -44,3 +44,65 @@ jobs:
 
       - name: Test (pytest with coverage gate)
         run: pytest --cov=src --cov-fail-under=60
+
+  lockfile-sync:
+    name: Lockfiles in sync with pyproject
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv (pinned to the version that generated the locks)
+        run: python -m pip install uv==0.11.18
+
+      - name: uv.lock is in sync with pyproject.toml
+        run: uv lock --check --python 3.12
+
+      - name: requirements*.txt are in sync with pyproject.toml
+        run: |
+          set -uo pipefail
+          pins() { grep -E '^[A-Za-z0-9].*==' "$1" | sort; }
+          fail=0
+
+          # Recompile from pyproject, anchored (-c) to the committed pins so this
+          # step fails on pyproject-driven drift (added/removed/floor-raised deps)
+          # rather than on unrelated new upstream releases. Mirrors the exact
+          # commands used to generate the two files.
+          if uv pip compile pyproject.toml \
+               --python-version 3.12 --generate-hashes \
+               -c requirements.txt -o /tmp/req.check -q; then
+            if ! diff <(pins requirements.txt) <(pins /tmp/req.check); then
+              echo "::error::requirements.txt is out of sync with pyproject.toml"
+              fail=1
+            fi
+          else
+            echo "::error::requirements.txt cannot be recompiled from pyproject.toml (raised version floor?)"
+            fail=1
+          fi
+
+          if uv pip compile pyproject.toml --extra dev \
+               --python-version 3.12 --generate-hashes \
+               -c requirements-dev.txt -o /tmp/reqdev.check -q; then
+            if ! diff <(pins requirements-dev.txt) <(pins /tmp/reqdev.check); then
+              echo "::error::requirements-dev.txt is out of sync with pyproject.toml"
+              fail=1
+            fi
+          else
+            echo "::error::requirements-dev.txt cannot be recompiled from pyproject.toml (raised version floor?)"
+            fail=1
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo "Regenerate the lockfiles from pyproject.toml and commit them:"
+            echo "  uv pip compile pyproject.toml --python-version 3.12 --generate-hashes -o requirements.txt"
+            echo "  uv pip compile pyproject.toml --extra dev -c requirements.txt --python-version 3.12 --generate-hashes -o requirements-dev.txt"
+            echo "  uv lock"
+            exit 1
+          fi
+          echo "All lockfiles are in sync with pyproject.toml."
