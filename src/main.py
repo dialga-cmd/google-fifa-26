@@ -10,9 +10,9 @@ Endpoints:
 import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
-from typing import Any, List, Optional
+from typing import List, Optional
 
-from src.store import get_all_complaints, insert_complaint, load_district_index
+from src.store import get_all_complaints, insert_complaint
 from src.summarize import summarize_and_rank
 
 app = FastAPI(
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 @app.get("/hotspots", response_model=dict)
-async def get_hotspots() -> dict:
+async def get_hotspots() -> JSONResponse:
     """Return the ranked complaint hotspot list."""
     try:
         result = summarize_and_rank()

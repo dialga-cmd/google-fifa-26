@@ -1,9 +1,16 @@
 import json
 import logging
 import os
+from types import ModuleType
 from typing import Dict, List, Optional, Any
 
-from src.store import get_all_complaints, load_district_index, get_district_by_name
+from src.store import get_all_complaints, load_district_index
+
+try:
+    google_genai: Optional[ModuleType]
+    from google import genai as google_genai
+except ImportError:  # pragma: no cover - depends on environment
+    google_genai = None
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +57,6 @@ def _call_groq(prompt: str, model: str = "llama-3.1-8b-instant") -> Optional[str
 
 def _call_gemini(prompt: str, model: str = "gemini-1.5-flash") -> Optional[str]:
     """Call Google Gemini for content generation."""
-    from google import genai
 
     if GEMINI_API_KEY is None:
         logger.warning("Gemini API key not set, skipping Gemini call")
@@ -73,6 +79,21 @@ def _call_gemini(prompt: str, model: str = "gemini-1.5-flash") -> Optional[str]:
     except Exception as exc:  # pragma: no cover - network/env dependent
         logger.warning("Gemini request failed: %s", exc)
         return None
+
+
+def _parse_llm_result(result: Optional[str], provider: str) -> Optional[Dict[str, Any]]:
+    """Parse a provider response when it contains the expected summary object."""
+    if not result:
+        return None
+    try:
+        parsed = json.loads(result)
+    except (json.JSONDecodeError, TypeError) as exc:
+        logger.warning("%s response was not valid JSON: %s", provider, exc)
+        return None
+    if isinstance(parsed, dict) and "summary" in parsed:
+        logger.info("%s summarization succeeded", provider)
+        return parsed
+    return None
 
 
 def _local_summary(complaints: List[Dict[str, Any]], districts: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -155,27 +176,19 @@ Return valid JSON with three fields:
 
     # Attempt 1: Google Gemini
     if AI_PROVIDER in {"gemini", "auto"} and GEMINI_API_KEY:
-        gemini_result = _call_gemini(prompt, model="gemini-1.5-flash")
-        if gemini_result:
-            try:
-                parsed = json.loads(gemini_result)
-                if isinstance(parsed, dict) and "summary" in parsed:
-                    logger.info("Gemini summarization succeeded")
-                    return parsed
-            except (json.JSONDecodeError, TypeError) as exc:
-                logger.warning("Gemini response was not valid JSON: %s", exc)
+        parsed = _parse_llm_result(
+            _call_gemini(prompt, model="gemini-1.5-flash"), "Gemini"
+        )
+        if parsed:
+            return parsed
 
     # Attempt 2: Groq
     if AI_PROVIDER in {"groq", "auto"} and GROQ_API_KEY:
-        groq_result = _call_groq(prompt, model="llama-3.1-8b-instant")
-        if groq_result:
-            try:
-                parsed = json.loads(groq_result)
-                if isinstance(parsed, dict) and "summary" in parsed:
-                    logger.info("Groq summarization succeeded")
-                    return parsed
-            except (json.JSONDecodeError, TypeError) as exc:
-                logger.warning("Groq response was not valid JSON: %s", exc)
+        parsed = _parse_llm_result(
+            _call_groq(prompt, model="llama-3.1-8b-instant"), "Groq"
+        )
+        if parsed:
+            return parsed
 
     # Attempt 3: Local non-LLM summary
     logger.info("Falling back to local non-LLM summary")

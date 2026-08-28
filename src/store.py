@@ -1,12 +1,11 @@
 import csv
-import json
 import os
 import sqlite3
 from typing import Dict, List, Optional, Any
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    # Project structure: data/ at root, backend/data/ for synthetic datasets
-    DATA_DIR = os.path.join(BASE_DIR, "backend", "data")
+# Project structure: data/ at root, backend/data/ for synthetic datasets
+DATA_DIR = os.path.join(BASE_DIR, "backend", "data")
 
 
 def get_db_path() -> str:
@@ -50,6 +49,7 @@ def insert_complaint(
     conn.commit()
     last_id = cur.lastrowid
     conn.close()
+    assert last_id is not None
     return last_id
 
 
