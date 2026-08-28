@@ -141,7 +141,7 @@ def test_frontend_assets_served():
     """The root route should serve the frontend landing page and its assets."""
     index_response = client.get("/")
     assert index_response.status_code == 200
-    assert "FanWayfinder" in index_response.text
+    assert "CivicPulse" in index_response.text
 
     js_response = client.get("/app.js")
     assert js_response.status_code == 200

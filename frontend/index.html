@@ -4,57 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self';">
-    <title>FanWayfinder - FIFA World Cup 2026</title>
+    <title>CivicPulse - Infrastructure Complaint Intake</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>FanWayfinder</h1>
-    <p>Your AI-powered guide for FIFA World Cup 2026 stadium</p>
+    <h1>CivicPulse</h1>
+    <p>Infrastructure complaint intake system</p>
 
-    <div id="chat-container" aria-live="polite" aria-atomic="true">
-        <div id="chat-settings">
-            <div class="settings-title">Active stadium</div>
+    <div id="call-container" aria-live="polite" aria-atomic="true">
+        <div id="call-settings">
+            <div class="settings-title">Issue category</div>
             <div class="settings-control">
-                <label for="stadium-select" class="visually-hidden">Select stadium</label>
-                <select id="stadium-select" aria-label="Select stadium">
-                    <option value="" disabled selected>Loading stadiums...</option>
+                <label for="category-select" class="visually-hidden">Select issue category</label>
+                <select id="category-select" aria-label="Select issue category">
+                    <option value="" disabled selected>Loading categories...</option>
+                    <option value="road">Road problem</option>
+                    <option value="water">Water issue</option>
+                    <option value="electricity">Electricity fault</option>
+                    <option value="sanitation">Sanitation problem</option>
                 </select>
             </div>
         </div>
         <div id="messages" aria-label="Chat messages"></div>
-        <div id="route-display" aria-live="polite">
-            <strong>Suggested Route:</strong> <span id="route-text" aria-live="polite"></span>
+        <div id="urgency-display" aria-live="polite">
+            <strong>Urgency:</strong> <span id="urgency-text" aria-live="polite"></span>
         </div>
     </div>
 
-    <div id="input-container" aria-label="Input controls">
+    <div id="input-container" aria-live="polite">
         <div id="meta-row">
             <div class="input-group">
-                <label for="location-select">Current location</label>
-                <select id="location-select" aria-label="Select current location">
-                    <option value="Gate_A">Gate A</option>
-                    <option value="Gate_B">Gate B</option>
-                    <option value="Gate_C">Gate C</option>
-                    <option value="Gate_D">Gate D</option>
-                </select>
+                <label for="location-input">Location/Description</label>
+                <input type="text" id="location-input" placeholder="Describe the location and extent of the issue..." aria-label="Describe the location and extent of the issue..." autocomplete="off">
             </div>
             <div class="input-group">
-                <label for="lang-select">Language</label>
-                <select id="lang-select" aria-label="Select language">
-                    <option value="en">English</option>
-                    <option value="es">Español (Spanish)</option>
-                    <option value="fr">Français (French)</option>
-                    <option value="de">Deutsch (German)</option>
-                    <option value="zh">中文 (Chinese)</option>
-                    <option value="ar">العربية (Arabic)</option>
-                    <option value="ru">Русский (Russian)</option>
-                </select>
+                <label for="contact-input">Citizen name (optional)</label>
+                <input type="text" id="contact-input" placeholder="Name" aria-label="Citizen name" autocomplete="off">
             </div>
         </div>
-        <label for="query-input" class="visually-hidden">Ask for directions, restrooms, food, medical help...</label>
-        <input type="text" id="query-input" placeholder="Ask for directions in your selected stadium..." aria-label="Ask for directions, restrooms, food, medical help..." autocomplete="off">
+        <label for="query-input" class="visually-hidden">Describe the infrastructure issue</label>
+        <input type="text" id="query-input" placeholder="Describe the infrastructure issue..." aria-label="Describe the infrastructure issue..." autocomplete="off">
+       scode
         <div id="send-row">
-            <button id="send-btn" aria-label="Send message">Send</button>
+            <button id="send-btn" aria-label="Send">Send</button>
         </div>
     </div>
 

@@ -17,7 +17,6 @@ import pytest
 # Add src to path (mirrors the other test modules).
 sys.path.insert(0, "src")
 
-import config as config_module
 from config import Config, _DEV_SECRET_KEY
 
 
@@ -42,9 +41,12 @@ def test_random_default_secret_attribute_removed():
     assert not hasattr(Config, "_DEFAULT_SECRET_KEY")
 
 
-def test_config_no_longer_imports_secrets():
-    """Guard against re-introducing a hardcoded secrets fallback in config logic."""
-    # imports secrets at module level for _DEV_SECRET_KEY generation — allowed
+def test_dev_secret_key_is_token_hex_32():
+    """Confirm _DEV_SECRET_KEY is generated via secrets.token_hex(32) at import time."""
+    import re
+    assert isinstance(_DEV_SECRET_KEY, str)
+    assert len(_DEV_SECRET_KEY) == 64
+    assert re.fullmatch(r"[0-9a-f]{64}", _DEV_SECRET_KEY) is not None
 
 
 def test_dev_default_is_a_fixed_insecure_marker():

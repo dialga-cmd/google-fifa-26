@@ -1,6 +1,6 @@
 """
-FanWayfinder API - AI-powered stadium navigation assistant for FIFA World Cup 2026
-Production-ready version with JWT authentication, Redis caching, rate limiting,
+CivicPulse API - Citizen infrastructure complaint intake for BRICS Track 1
+Production-ready version with JWT authentication, SQLite logging, rate limiting,
 security headers, and comprehensive validation.
 """
 
@@ -466,7 +466,7 @@ def generate_ai_response(prompt: str) -> Optional[str]:
                 logger.info("Trying Gemini provider")
                 client = google_genai.Client(api_key=Config.GEMINI_API_KEY)
                 gemini_response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-1.5-flash",
                     contents=full_prompt,
                 )
                 result = getattr(gemini_response, "text", None)

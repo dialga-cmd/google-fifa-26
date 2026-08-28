@@ -1,14 +1,13 @@
-const API_URL = '/advice';
+const API_URL = '/log_complaint';
 const messagesDiv = document.getElementById('messages');
-const routeDisplay = document.getElementById('route-display');
-const routeText = document.getElementById('route-text');
-const stadiumSelect = document.getElementById('stadium-select');
-const locationSelect = document.getElementById('location-select');
+const urgencyDisplay = document.getElementById('urgency-display');
+const urgencyText = document.getElementById('urgency-text');
+const categorySelect = document.getElementById('category-select');
+const locationInput = document.getElementById('location-input');
+const contactInput = document.getElementById('contact-input');
 const queryInput = document.getElementById('query-input');
 const sendBtn = document.getElementById('send-btn');
 const statusDiv = document.getElementById('status');
-const langSelect = document.getElementById('lang-select');
-
 
 function addMessage(text, isUser = false) {
     const messageDiv = document.createElement('div');
@@ -23,24 +22,24 @@ function addMessage(text, isUser = false) {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-function showRoute(route) {
-    if (route && route.length > 0) {
-        routeText.textContent = route.join(' → ');
-        routeDisplay.style.display = 'block';
-        routeDisplay.setAttribute('aria-live', 'polite');
+function showUrgency(level) {
+    if (level && level !== 'none') {
+        urgencyText.textContent = level;
+        urgencyDisplay.style.display = 'block';
+        urgencyDisplay.setAttribute('aria-live', 'polite');
     } else {
-        routeText.textContent = '';
-        routeDisplay.style.display = 'none';
-        routeDisplay.removeAttribute('aria-live');
+        urgencyText.textContent = '';
+        urgencyDisplay.style.display = 'none';
+        urgencyDisplay.removeAttribute('aria-live');
     }
 }
 
 async function sendQuery() {
     const query = queryInput.value.trim();
-    const selectedLang = langSelect.value;
-    const selectedStadium = stadiumSelect.value;
-    const selectedLocation = locationSelect.value || 'Gate_A';
-    if (!query || !selectedStadium) return;
+    const selectedCat = categorySelect.value;
+    const selectedLocation = locationInput.value.trim();
+    const selectedContact = contactInput.value.trim();
+    if (!query || !selectedCat) return;
 
     queryInput.disabled = true;
     sendBtn.disabled = true;
@@ -53,11 +52,11 @@ async function sendQuery() {
     try {
         const body = {
             query: query,
-            language: selectedLang,
+            category: selectedCat,
             location: selectedLocation,
-            stadium: selectedStadium
+            contact: selectedContact
         };
-        console.debug('Sending advice request', body);
+        console.debug('Sending complaint request', body);
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
@@ -66,17 +65,18 @@ async function sendQuery() {
             body: JSON.stringify(body)
         });
 
-        console.debug('Advice response status:', response.status);
+        console.debug('Complaint response status:', response.status);
         if (!response.ok) {
             const text = await response.text();
-            console.error('Advice request failed body:', text);
+            console.error('Complaint request failed body:', text);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        console.debug('Advice response data:', data);
-        addMessage(data.advice);
-        showRoute(data.route);
+        console.debug('Complaint response data:', data);
+        addMessage(data.advice || data.status);
+        showUrgency(data.urgency);
+        queryInput.value = '';
 
     } catch (error) {
         console.error('Error:', error);
@@ -98,33 +98,10 @@ queryInput.addEventListener('keypress', (e) => {
     }
 });
 
-async function loadStadiums() {
-    try {
-        console.debug('Loading stadium list from /stadiums');
-        const response = await fetch('/stadiums?nocache=' + Date.now());
-        console.debug('Stadium list response status:', response.status);
-        if (!response.ok) {
-            throw new Error('Failed to load stadium list');
-        }
-        const data = await response.json();
-        stadiumSelect.innerHTML = '';
-        data.stadiums.forEach((name) => {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            stadiumSelect.appendChild(option);
-        });
-    } catch (error) {
-        console.error('Stadium loading error:', error);
-        stadiumSelect.innerHTML = '<option value="MetLife Stadium">MetLife Stadium</option>' +
-            '<option value="SoFi Stadium">SoFi Stadium</option>' +
-            '<option value="AT&T Stadium">AT&T Stadium</option>';
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
     }
-}
-
-loadStadiums();
-
-queryInput.focus();
+});
 
 window.addEventListener('error', (event) => {
     console.error('Global runtime error:', event.error || event.message, event);
@@ -132,10 +109,4 @@ window.addEventListener('error', (event) => {
 
 window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
-});
-
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        routeImage.style.display = routeImage.src ? 'block' : 'none';
-    }
 });

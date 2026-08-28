@@ -1,5 +1,5 @@
 """
-FanWayfinder Configuration - Extracted from src/api.py
+CivicPulse Configuration - Extracted from src/api.py
 """
 
 import logging
