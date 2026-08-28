@@ -2,6 +2,8 @@
 
 CivicPulse is a citizen infrastructure-complaint intake system for BRICS Track 1: AI for Digital Public Infrastructure and Governance. It enables citizens to report infrastructure problems — roads, water, electricity, sanitation — via voice call, and produces a ranked hotspot list for policymakers by district.
 
+**Quickstart with Docker:** `docker compose up`
+
 ## What the project does
 
 - Receives real-time voice complaints through a LiveKit voice agent
