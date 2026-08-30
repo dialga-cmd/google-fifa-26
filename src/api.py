@@ -24,10 +24,8 @@ from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from jose import jwt, JWTError
-
-if not hasattr(jwt, "JWTError"):
-    jwt.JWTError = JWTError
+from jose import jwt
+from jose.exceptions import JWTError
 
 import networkx as nx
 import paho.mqtt.client as mqtt
@@ -232,7 +230,7 @@ class StadiumGraph:
         with self.lock:
             cong = self.edge_congestion.get((u, v), 0.0)
         # Weight = base * (1 + congestion) - higher congestion increases weight
-        return base * (1 + cong)  # type: ignore[no-any-return]
+        return base * (1 + cong)
 
     def find_shortest_path(self, source: str, target: str) -> List[str]:
         """Find shortest path avoiding congested routes when possible."""
@@ -241,12 +239,12 @@ class StadiumGraph:
 
         try:
             path = nx.shortest_path(self.G, source=source, target=target, weight=self.get_edge_weight)
-            return path  # type: ignore[no-any-return]
+            return path
         except nx.NetworkXNoPath:
             # Fallback to unweighted path if weighted fails
             try:
                 path = nx.shortest_path(self.G, source=source, target=target)
-                return path  # type: ignore[no-any-return]
+                return path
             except nx.NetworkXNoPath:
                 return []
         except Exception as e:
@@ -451,7 +449,7 @@ def generate_ai_response(prompt: str) -> Optional[str]:
             data = response.json()
             result = data.get("choices", [{}])[0].get("message", {}).get("content")
             logger.info("Groq response received")
-            return result  # type: ignore[no-any-return]
+            return result
         except Exception as exc:  # pragma: no cover - network/env dependent
             response_text = getattr(exc, 'response', None)
             if response_text is not None:
