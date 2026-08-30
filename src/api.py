@@ -25,7 +25,6 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from jose import jwt
-from jose.exceptions import JWTError
 
 import networkx as nx
 import paho.mqtt.client as mqtt
