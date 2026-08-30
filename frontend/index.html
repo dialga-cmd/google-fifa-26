@@ -8,49 +8,78 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>CivicPulse</h1>
-    <p>Infrastructure complaint intake system</p>
+    <header>
+        <h1>CivicPulse</h1>
+        <nav>
+            <a href="/">Report Issue</a>
+            <a href="/dashboard/hotspots">Hotspot Dashboard</a>
+        </nav>
+    </header>
 
-    <div id="call-container" aria-live="polite" aria-atomic="true">
-        <div id="call-settings">
-            <div class="settings-title">Issue category</div>
-            <div class="settings-control">
-                <label for="category-select" class="visually-hidden">Select issue category</label>
-                <select id="category-select" aria-label="Select issue category">
-                    <option value="" disabled selected>Loading categories...</option>
-                    <option value="road">Road problem</option>
-                    <option value="water">Water issue</option>
-                    <option value="electricity">Electricity fault</option>
-                    <option value="sanitation">Sanitation problem</option>
-                </select>
-            </div>
-        </div>
-        <div id="messages" aria-label="Chat messages"></div>
-        <div id="urgency-display" aria-live="polite">
-            <strong>Urgency:</strong> <span id="urgency-text" aria-live="polite"></span>
-        </div>
-    </div>
+    <main>
+        <section class="hero">
+            <h2>Report an Infrastructure Issue</h2>
+            <p>Help improve your community by reporting problems with roads, water, electricity, or sanitation.</p>
+        </section>
 
-    <div id="input-container" aria-live="polite">
-        <div id="meta-row">
-            <div class="input-group">
-                <label for="location-input">Location/Description</label>
-                <input type="text" id="location-input" placeholder="Describe the location and extent of the issue..." aria-label="Describe the location and extent of the issue..." autocomplete="off">
-            </div>
-            <div class="input-group">
-                <label for="contact-input">Citizen name (optional)</label>
-                <input type="text" id="contact-input" placeholder="Name" aria-label="Citizen name" autocomplete="off">
-            </div>
-        </div>
-        <label for="query-input" class="visually-hidden">Describe the infrastructure issue</label>
-        <input type="text" id="query-input" placeholder="Describe the infrastructure issue..." aria-label="Describe the infrastructure issue..." autocomplete="off">
-       scode
-        <div id="send-row">
-            <button id="send-btn" aria-label="Send">Send</button>
-        </div>
-    </div>
+        <section id="complaint-form" aria-labelledby="form-title">
+            <h3 id="form-title">Submit a Complaint</h3>
+            <form id="complaint-form-element">
+                <div class="form-group">
+                    <label for="category">Category *</label>
+                    <select id="category" name="category" required>
+                        <option value="">Select a category</option>
+                        <option value="road">Road</option>
+                        <option value="water">Water</option>
+                        <option value="electricity">Electricity</option>
+                        <option value="sanitation">Sanitation</option>
+                    </select>
+                </div>
 
-    <div id="status" class="status ready" aria-live="polite">Ready</div>
+                <div class="form-group">
+                    <label for="location">Location *</label>
+                    <input type="text" id="location" name="location" placeholder="e.g., Main St & 5th Ave, Downtown" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description *</label>
+                    <textarea id="description" name="description" placeholder="Describe the problem in detail..." rows="4" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="urgency">Urgency</label>
+                    <select id="urgency" name="urgency">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="citizen_name">Your Name (optional)</label>
+                    <input type="text" id="citizen_name" name="citizen_name" placeholder="John Doe">
+                </div>
+
+                <div class="form-group">
+                    <label for="contact">Contact (optional)</label>
+                    <input type="text" id="contact" name="contact" placeholder="Phone or email">
+                </div>
+
+                <button type="submit" id="submit-btn">Submit Complaint</button>
+            </form>
+            <div id="form-message" aria-live="polite"></div>
+        </section>
+
+        <section id="recent-complaints" aria-labelledby="recent-title">
+            <h3 id="recent-title">Recent Complaints</h3>
+            <div id="complaints-list" aria-live="polite">Loading...</div>
+        </section>
+    </main>
+
+    <footer>
+        <p>CivicPulse - Citizen Infrastructure Complaint Intake System for BRICS Track 1</p>
+    </footer>
 
     <script src="app.js"></script>
 </body>

@@ -1,112 +1,127 @@
-const API_URL = '/log_complaint';
-const messagesDiv = document.getElementById('messages');
-const urgencyDisplay = document.getElementById('urgency-display');
-const urgencyText = document.getElementById('urgency-text');
-const categorySelect = document.getElementById('category-select');
-const locationInput = document.getElementById('location-input');
-const contactInput = document.getElementById('contact-input');
-const queryInput = document.getElementById('query-input');
-const sendBtn = document.getElementById('send-btn');
-const statusDiv = document.getElementById('status');
+/**
+ * CivicPulse Complaint Form JavaScript
+ * Handles complaint submission and displays recent complaints
+ */
 
-function addMessage(text, isUser = false) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message ' + (isUser ? 'user-message' : 'bot-message');
+const COMPLAINT_API = '/log_complaint';
+const COMPLAINTS_API = '/complaints';
 
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
-    contentDiv.textContent = text;
+const form = document.getElementById('complaint-form-element');
+const formMessage = document.getElementById('form-message');
+const complaintsList = document.getElementById('complaints-list');
+const submitBtn = document.getElementById('submit-btn');
 
-    messageDiv.appendChild(contentDiv);
-    messagesDiv.appendChild(messageDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-
-function showUrgency(level) {
-    if (level && level !== 'none') {
-        urgencyText.textContent = level;
-        urgencyDisplay.style.display = 'block';
-        urgencyDisplay.setAttribute('aria-live', 'polite');
-    } else {
-        urgencyText.textContent = '';
-        urgencyDisplay.style.display = 'none';
-        urgencyDisplay.removeAttribute('aria-live');
-    }
-}
-
-async function sendQuery() {
-    const query = queryInput.value.trim();
-    const selectedCat = categorySelect.value;
-    const selectedLocation = locationInput.value.trim();
-    const selectedContact = contactInput.value.trim();
-    if (!query || !selectedCat) return;
-
-    queryInput.disabled = true;
-    sendBtn.disabled = true;
-    statusDiv.textContent = 'Thinking...';
-    statusDiv.className = 'status thinking';
-
-    addMessage(query, true);
-    queryInput.value = '';
-
+async function fetchComplaints() {
     try {
-        const body = {
-            query: query,
-            category: selectedCat,
-            location: selectedLocation,
-            contact: selectedContact
-        };
-        console.debug('Sending complaint request', body);
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)
-        });
-
-        console.debug('Complaint response status:', response.status);
+        const response = await fetch(COMPLAINTS_API);
         if (!response.ok) {
-            const text = await response.text();
-            console.error('Complaint request failed body:', text);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-
-        const data = await response.json();
-        console.debug('Complaint response data:', data);
-        addMessage(data.advice || data.status);
-        showUrgency(data.urgency);
-        queryInput.value = '';
-
+        return await response.json();
     } catch (error) {
-        console.error('Error:', error);
-        addMessage('Sorry, I encountered an error. Please try again.');
-    } finally {
-        queryInput.disabled = false;
-        sendBtn.disabled = false;
-        statusDiv.textContent = 'Ready';
-        statusDiv.className = 'status ready';
-        queryInput.focus();
+        console.error('Error fetching complaints:', error);
+        return [];
     }
 }
 
-sendBtn.addEventListener('click', sendQuery);
+function renderComplaints(complaints) {
+    if (!complaints || complaints.length === 0) {
+        complaintsList.innerHTML = '<p>No complaints logged yet.</p>';
+        return;
+    }
 
-queryInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        sendQuery();
+    // Show only the 10 most recent
+    const recent = complaints.slice(0, 10);
+
+    let html = '<ul class="complaints-list">';
+    recent.forEach(complaint => {
+        const urgencyClass = `urgency-${(complaint.urgency || 'medium').toLowerCase()}`;
+        const date = new Date(complaint.created_at).toLocaleDateString();
+        html += `
+            <li class="complaint-item">
+                <div class="complaint-header">
+                    <span class="complaint-category">${complaint.category}</span>
+                    <span class="urgency-badge ${urgencyClass}">${(complaint.urgency || 'medium').charAt(0).toUpperCase() + (complaint.urgency || 'medium').slice(1)}</span>
+                </div>
+                <div class="complaint-location">${complaint.location}</div>
+                <div class="complaint-description">${complaint.description}</div>
+                <div class="complaint-meta">
+                    <span>Reported: ${date}</span>
+                    ${complaint.citizen_name ? `<span>By: ${complaint.citizen_name}</span>` : ''}
+                </div>
+            </li>
+        `;
+    });
+    html += '</ul>';
+    complaintsList.innerHTML = html;
+}
+
+async function loadComplaints() {
+    complaintsList.innerHTML = 'Loading...';
+    const complaints = await fetchComplaints();
+    renderComplaints(complaints);
+}
+
+function showMessage(message, isError = false) {
+    formMessage.textContent = message;
+    formMessage.className = isError ? 'error' : 'success';
+    formMessage.style.display = 'block';
+
+    // Hide after 5 seconds
+    setTimeout(() => {
+        formMessage.style.display = 'none';
+    }, 5000);
+}
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const complaint = {
+        category: formData.get('category'),
+        location: formData.get('location'),
+        description: formData.get('description'),
+        urgency: formData.get('urgency'),
+        citizen_name: formData.get('citizen_name') || null,
+        contact: formData.get('contact') || null,
+    };
+
+    // Validate required fields
+    if (!complaint.category || !complaint.location || !complaint.description) {
+        showMessage('Please fill in all required fields', true);
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    formMessage.style.display = 'none';
+
+    try {
+        const response = await fetch(COMPLAINT_API, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(complaint),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || `HTTP error! status: ${response.status}`);
+        }
+
+        showMessage(`Complaint submitted successfully! Reference #${data.id}`);
+        form.reset();
+        await loadComplaints();
+    } catch (error) {
+        console.error('Error submitting complaint:', error);
+        showMessage(`Error: ${error.message}`, true);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Complaint';
     }
 });
 
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-    }
-});
-
-window.addEventListener('error', (event) => {
-    console.error('Global runtime error:', event.error || event.message, event);
-});
-
-window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection:', event.reason);
-});
+// Initial load
+loadComplaints();

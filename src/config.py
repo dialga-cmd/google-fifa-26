@@ -1,10 +1,9 @@
 """
-CivicPulse Configuration - Extracted from src/api.py
+FanWayfinder Configuration - Extracted from src/api.py
 """
 
 import logging
 import os
-import secrets
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -16,7 +15,7 @@ logger = logging.getLogger(__name__)
 # deliberately do NOT generate a random fallback here: a per-process random key
 # silently invalidates tokens across restarts and workers and masks the
 # missing-configuration error.
-_DEV_SECRET_KEY = secrets.token_hex(32)
+_DEV_SECRET_KEY = "dev-insecure-do-not-use-in-production"
 
 
 def load_env_file() -> None:

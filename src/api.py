@@ -1,6 +1,6 @@
 """
-CivicPulse API - Citizen infrastructure complaint intake for BRICS Track 1
-Production-ready version with JWT authentication, SQLite logging, rate limiting,
+FanWayfinder API - AI-powered stadium navigation assistant for FIFA World Cup 2026
+Production-ready version with JWT authentication, Redis caching, rate limiting,
 security headers, and comprehensive validation.
 """
 
@@ -232,7 +232,7 @@ class StadiumGraph:
         with self.lock:
             cong = self.edge_congestion.get((u, v), 0.0)
         # Weight = base * (1 + congestion) - higher congestion increases weight
-        return base * (1 + cong)
+        return base * (1 + cong)  # type: ignore[no-any-return]
 
     def find_shortest_path(self, source: str, target: str) -> List[str]:
         """Find shortest path avoiding congested routes when possible."""
@@ -241,12 +241,12 @@ class StadiumGraph:
 
         try:
             path = nx.shortest_path(self.G, source=source, target=target, weight=self.get_edge_weight)
-            return path
+            return path  # type: ignore[no-any-return]
         except nx.NetworkXNoPath:
             # Fallback to unweighted path if weighted fails
             try:
                 path = nx.shortest_path(self.G, source=source, target=target)
-                return path
+                return path  # type: ignore[no-any-return]
             except nx.NetworkXNoPath:
                 return []
         except Exception as e:
@@ -451,7 +451,7 @@ def generate_ai_response(prompt: str) -> Optional[str]:
             data = response.json()
             result = data.get("choices", [{}])[0].get("message", {}).get("content")
             logger.info("Groq response received")
-            return result
+            return result  # type: ignore[no-any-return]
         except Exception as exc:  # pragma: no cover - network/env dependent
             response_text = getattr(exc, 'response', None)
             if response_text is not None:
@@ -466,7 +466,7 @@ def generate_ai_response(prompt: str) -> Optional[str]:
                 logger.info("Trying Gemini provider")
                 client = google_genai.Client(api_key=Config.GEMINI_API_KEY)
                 gemini_response = client.models.generate_content(
-                    model="gemini-1.5-flash",
+                    model="gemini-2.5-flash",
                     contents=full_prompt,
                 )
                 result = getattr(gemini_response, "text", None)

@@ -1,124 +1,170 @@
-# CivicPulse
+# FanWayfinder
 
-CivicPulse is a citizen infrastructure-complaint intake system for BRICS Track 1: AI for Digital Public Infrastructure and Governance. It enables citizens to report infrastructure problems — roads, water, electricity, sanitation — via voice call, and produces a ranked hotspot list for policymakers by district.
-
-**Quickstart with Docker:** `docker compose up`
+FanWayfinder is an AI-powered stadium navigation assistant designed for the FIFA World Cup 2026 experience. It helps fans find facilities, navigate to sections, receive accessibility-aware guidance, and interact through voice or text.
 
 ## What the project does
 
-- Receives real-time voice complaints through a LiveKit voice agent
-- Logs complaints (category, location, description, urgency, optional citizen name/contact) into SQLite
-- A FastAPI analytics service summarizes and scores complaints per district using Google Gemini (with Groq fallback) and an LLM
-- A dashboard page displays the ranked hotspot list by district
-- Designed for hackathon demos and scalable DPI deployment
+- Provides stadium navigation assistance for fans and event staff
+- Supports multilingual and voice-enabled interaction
+- Uses a lightweight knowledge base and routing graph for wayfinding
+- Includes a simple accessibility-conscious frontend experience
+- Offers a backend API that can be tested locally or deployed to a cloud platform
 
-## Architecture
+## Current capabilities
 
-```mermaid
-graph TD
-    A[Voice Call] -->|LiveKit| B(Voice Agent)
-    B -->|SQLite| C[Complaints DB]
-    C -->|FastAPI| D[Analytics Service]
-    D -->|Ranked List| E[Dashboard]
-    style CivicPulse fill:#f9f9f9,stroke:#333,stroke-width:2px
+- Natural-language queries such as “Where is the nearest restroom?”
+- Route suggestions based on a stadium graph
+- Congestion-aware routing concept using live-style edge updates
+- Voice and text input/output support in the frontend
+- Accessibility-friendly interface elements and ARIA labels
+- Token-based authentication flow for API requests
+
+## Local setup
+
+### 1. Clone the repository
+
+```bash
+git clone <your-repo-url>
+cd fan_wayfinder
 ```
 
-## Components
+### 2. Create and activate a Python environment
 
-| Component | Description |
-|---|---|
-| **Backend (LiveKit voice agent)** | `src/agent.py` — handles speech-to-text (Deepgram), LLM reasoning, text-to-speech (Murf), and logs complaints to SQLite |
-| **Analytics Service** | FastAPI app at `analytics/` — reads logged complaints + district dataset, summarizes with Gemini/Groq, produces ranked hotspot list |
-| **Database** | SQLite with `complaints` table; synthetic district dataset at `backend/data/district_infra_index.csv` |
-| **Frontend** | Next.js app with voice call UI and `/dashboard/hotspots` route showing ranked results |
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
 
-## Quickstart
+### 3. Install dependencies
 
-1. **Clone and install**
+```bash
+pip install -r requirements.txt
+```
 
-   ```bash
-   git clone <your-repo-url>
-   cd civicpulse
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
+Both `requirements.txt` (runtime) and `requirements-dev.txt` (runtime + dev
+tools) are hash-pinned lockfiles. If you're contributing — running the tests,
+`ruff`, or `mypy` locally — install the dev lockfile instead. It matches CI
+exactly:
 
-2. **Configure environment variables**
+```bash
+pip install --require-hashes -r requirements-dev.txt
+```
 
-   Copy `.env.example` to `.env` and set the required keys:
+### 4. Configure environment variables
 
-   ```bash
-   cp .env.example .env
-   ```
+Copy the template and fill in any values you need. All variables are optional
+for local development (sensible defaults are baked in), so this step can be
+skipped when just trying things out:
 
-   Required environment variables:
+```bash
+cp .env.example .env
+```
 
-   | Variable | Description |
-   |---|---|
-   | `GEMINI_API_KEY` | Google Gemini API key (required) |
-   | `GROQ_API_KEY` | Groq API key (optional; used as fallback if Gemini key is missing) |
-   | `ENVIRONMENT` | `development` or `production` |
-   | `SECRET_KEY` | Strong random key; required when `ENVIRONMENT=production` |
+[.env.example](.env.example) documents every environment variable the app
+reads, grouped by concern (AI keys, security/JWT, Redis, rate limiting, MQTT,
+data files). `.env` is gitignored — never commit real secrets. `SECRET_KEY` is
+the only variable that is strictly required, and only when `ENVIRONMENT=production`.
 
-   ```env
-   GEMINI_API_KEY=your-gemini-key
-   GROQ_API_KEY=your-groq-key
-   ENVIRONMENT=development
-   SECRET_KEY=dev-key-not-for-production
-   ```
+### 5. Generate sample data
 
-3. **Generate synthetic data and seed the database**
+```bash
+python3 src/generate_graph.py
+```
 
-   ```bash
-   python3 backend/seed_db.py
-   ```
+### 6. Run the backend
 
-   This inserts 15–20 realistic fake complaints into the SQLite database so the dashboard has data to show without live voice calls.
+```bash
+python3 src/api.py
+```
 
-4. **Start the backend**
+The API will be available at:
+- http://localhost:8000/docs
+- http://localhost:8000/advice
 
-   ```bash
-   python3 src/agent.py
-   ```
+### 7. Open the frontend
 
-   The voice agent will start and listen for LiveKit connections. Complaints are logged to `data/complaints.db`.
-
-5. **Start the analytics service**
-
-   ```bash
-   python3 analytics/main.py
-   ```
-
-   The FastAPI service reads from the SQLite database and runs the Gemini/Groq summarization pipeline to produce a ranked hotspot list.
-
-6. **Start the frontend**
-
-   ```bash
-   cd frontend
-   npm install && npm run dev
-   ```
-
-   Open the app and navigate to `/dashboard/hotspots` to see the ranked complaint hotspots by district.
+Open the file [frontend/index.html](frontend/index.html) in a browser, or serve the folder with a simple static server if preferred.
 
 ## Run tests
 
 ```bash
-python3 -m pytest tests/ -v
+python3 -m pytest tests/test_basic.py tests/test_api_comprehensive.py tests/test_new_features.py -v
 ```
 
-## Known limitations
+## Project structure
 
-- The Gemini summarization quality depends on the API key being valid and the model being available; if both Gemini and Groq keys are missing, the system falls back to a basic keyword-based summary, which may not produce nuanced rankings.
-- The district scoring algorithm uses a synthetic district infrastructure index; real-world deployment would need a validated geographic and infrastructure dataset.
-- The voice agent requires LiveKit, Deepgram, and Murf API keys for full functionality; the demo can run with seeded SQLite data alone.
-- The analytics service currently processes complaints in memory; very high volumes would require a persistent queue (e.g., Redis) and batch processing.
-- The frontend dashboard is a prototype; a production deployment would include authentication, filtering, and export capabilities.
+```text
+fan_wayfinder/
+├── src/
+│   ├── api.py
+│   ├── generate_graph.py
+│   └── sensor_mock.py
+├── frontend/
+│   ├── index.html
+│   ├── app.js
+│   └── style.css
+├── data/
+│   ├── kb_chunks.json
+│   ├── stadium_graph.gexf
+│   └── stadium_graph.json
+├── tests/
+├── api/
+│   └── advice.py
+├── requirements.txt
+├── pyproject.toml
+└── vercel.json
+```
 
 ## Deployment
 
-- **Render**: Deploy the backend as a Web Service (Docker), the analytics as a separate service, and the frontend as a Static Site. Set environment variables in the Render dashboard.
-- **Vercel**: Deploy the frontend; set GEMINI_API_KEY (and GROQ_API_KEY if desired) as Vercel environment variables.
-- **Docker**: Use the provided `Dockerfile` at the repo root for containerized deployment.
+This project is deployed to Render (see below). Vercel-specific files and configuration were removed from the repository after migrating the backend to Render.
 
-See `.env.example` for the complete list of environment variables the project understands.
+If you previously used Vercel and have environment variables there, make sure to re-add them to Render or your chosen host. The full list of variables the app understands is documented in [.env.example](.env.example); the AI-related ones are:
+
+```text
+GEMINI_API_KEY=<your-key>
+GROQ_API_KEY=<your-key>
+AI_PROVIDER=auto
+```
+
+
+## Deploying to Render (recommended for backend)
+
+Render supports container deployments and is a good fit for this project's backend when you need longer timeouts or background workers (MQTT, threads).
+
+Quick steps:
+
+1. Create a Render account and connect your GitHub repo.
+2. Add a new **Web Service** and select the `Docker` environment.
+3. Point the service to this repository and the `Dockerfile` at the repo root.
+4. Set environment variables in the Render dashboard (Production & Staging). See [.env.example](.env.example) for the complete list; at minimum set a strong `SECRET_KEY` (required when `ENVIRONMENT=production`) plus your AI keys:
+
+```text
+ENVIRONMENT=production
+SECRET_KEY=<a-strong-random-value>
+GEMINI_API_KEY=<your-key>
+GROQ_API_KEY=<your-key>
+AI_PROVIDER=auto
+```
+
+5. Deploy. Render will build the Docker image and run the container. The app uses `uvicorn src.api:app` to serve the FastAPI app.
+
+Alternative: use the provided `render.yaml` as a template for Render's YAML-based services. Fill in any secret values in the dashboard rather than storing them in the repo.
+
+Notes and tips:
+- The `Dockerfile` installed in this repo uses `uvicorn` to run the app and respects the `$PORT` environment variable provided by Render.
+- For background workers or MQTT bridges, prefer a dedicated service on Render (add another service in the dashboard) so you can run persistent processes.
+- Don't commit `.env` to the repository; use Render's environment variables for secrets.
+
+
+## Submission checklist
+
+- Ensure the repo is public or shared with the judges
+- Include a short demo video or demo link
+- Confirm the backend runs locally and on your deployment target
+- Prepare a concise pitch explaining the problem, solution, and impact
+- Include accessibility and multilingual value in your presentation
+
+## License
+
+MIT License.

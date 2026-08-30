@@ -145,7 +145,7 @@ def test_frontend_assets_served():
 
     js_response = client.get("/app.js")
     assert js_response.status_code == 200
-    assert "API_URL" in js_response.text
+    assert "COMPLAINT_API" in js_response.text
 
     css_response = client.get("/style.css")
     assert css_response.status_code == 200

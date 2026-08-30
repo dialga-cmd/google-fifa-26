@@ -41,17 +41,29 @@ def test_random_default_secret_attribute_removed():
     assert not hasattr(Config, "_DEFAULT_SECRET_KEY")
 
 
-def test_dev_secret_key_is_token_hex_32():
-    """Confirm _DEV_SECRET_KEY is generated via secrets.token_hex(32) at import time."""
-    import re
+def test_dev_secret_key_is_fixed_stable_value():
+    """Confirm _DEV_SECRET_KEY is a fixed stable value (not random per import)."""
     assert isinstance(_DEV_SECRET_KEY, str)
-    assert len(_DEV_SECRET_KEY) == 64
-    assert re.fullmatch(r"[0-9a-f]{64}", _DEV_SECRET_KEY) is not None
+    assert _DEV_SECRET_KEY == "dev-insecure-do-not-use-in-production"
 
 
-def test_dev_default_is_a_fixed_insecure_marker():
-    """The dev fallback is a string generated at import time via secrets.token_hex(32)."""
-    assert isinstance(_DEV_SECRET_KEY, str)
+def test_dev_secret_key_stable_across_imports():
+    """Confirm _DEV_SECRET_KEY is identical across fresh imports (not regenerated)."""
+    import sys
+    # Import config module fresh
+    if "config" in sys.modules:
+        del sys.modules["config"]
+    import config as config_first
+    key1 = config_first._DEV_SECRET_KEY
+
+    # Import again fresh
+    if "config" in sys.modules:
+        del sys.modules["config"]
+    import config as config_second
+    key2 = config_second._DEV_SECRET_KEY
+
+    # Both imports should yield the exact same fixed value
+    assert key1 == key2 == "dev-insecure-do-not-use-in-production"
 
 
 def test_production_without_secret_key_raises():
