@@ -1,127 +1,141 @@
-/**
- * CivicPulse Complaint Form JavaScript
- * Handles complaint submission and displays recent complaints
- */
+const API_URL = '/advice';
+const messagesDiv = document.getElementById('messages');
+const routeDisplay = document.getElementById('route-display');
+const routeText = document.getElementById('route-text');
+const stadiumSelect = document.getElementById('stadium-select');
+const locationSelect = document.getElementById('location-select');
+const queryInput = document.getElementById('query-input');
+const sendBtn = document.getElementById('send-btn');
+const statusDiv = document.getElementById('status');
+const langSelect = document.getElementById('lang-select');
 
-const COMPLAINT_API = '/log_complaint';
-const COMPLAINTS_API = '/complaints';
 
-const form = document.getElementById('complaint-form-element');
-const formMessage = document.getElementById('form-message');
-const complaintsList = document.getElementById('complaints-list');
-const submitBtn = document.getElementById('submit-btn');
+function addMessage(text, isUser = false) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ' + (isUser ? 'user-message' : 'bot-message');
 
-async function fetchComplaints() {
-    try {
-        const response = await fetch(COMPLAINTS_API);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching complaints:', error);
-        return [];
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    contentDiv.textContent = text;
+
+    messageDiv.appendChild(contentDiv);
+    messagesDiv.appendChild(messageDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function showRoute(route) {
+    if (route && route.length > 0) {
+        routeText.textContent = route.join(' → ');
+        routeDisplay.style.display = 'block';
+        routeDisplay.setAttribute('aria-live', 'polite');
+    } else {
+        routeText.textContent = '';
+        routeDisplay.style.display = 'none';
+        routeDisplay.removeAttribute('aria-live');
     }
 }
 
-function renderComplaints(complaints) {
-    if (!complaints || complaints.length === 0) {
-        complaintsList.innerHTML = '<p>No complaints logged yet.</p>';
-        return;
-    }
+async function sendQuery() {
+    const query = queryInput.value.trim();
+    const selectedLang = langSelect.value;
+    const selectedStadium = stadiumSelect.value;
+    const selectedLocation = locationSelect.value || 'Gate_A';
+    if (!query || !selectedStadium) return;
 
-    // Show only the 10 most recent
-    const recent = complaints.slice(0, 10);
+    queryInput.disabled = true;
+    sendBtn.disabled = true;
+    statusDiv.textContent = 'Thinking...';
+    statusDiv.className = 'status thinking';
 
-    let html = '<ul class="complaints-list">';
-    recent.forEach(complaint => {
-        const urgencyClass = `urgency-${(complaint.urgency || 'medium').toLowerCase()}`;
-        const date = new Date(complaint.created_at).toLocaleDateString();
-        html += `
-            <li class="complaint-item">
-                <div class="complaint-header">
-                    <span class="complaint-category">${complaint.category}</span>
-                    <span class="urgency-badge ${urgencyClass}">${(complaint.urgency || 'medium').charAt(0).toUpperCase() + (complaint.urgency || 'medium').slice(1)}</span>
-                </div>
-                <div class="complaint-location">${complaint.location}</div>
-                <div class="complaint-description">${complaint.description}</div>
-                <div class="complaint-meta">
-                    <span>Reported: ${date}</span>
-                    ${complaint.citizen_name ? `<span>By: ${complaint.citizen_name}</span>` : ''}
-                </div>
-            </li>
-        `;
-    });
-    html += '</ul>';
-    complaintsList.innerHTML = html;
-}
-
-async function loadComplaints() {
-    complaintsList.innerHTML = 'Loading...';
-    const complaints = await fetchComplaints();
-    renderComplaints(complaints);
-}
-
-function showMessage(message, isError = false) {
-    formMessage.textContent = message;
-    formMessage.className = isError ? 'error' : 'success';
-    formMessage.style.display = 'block';
-
-    // Hide after 5 seconds
-    setTimeout(() => {
-        formMessage.style.display = 'none';
-    }, 5000);
-}
-
-form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const formData = new FormData(form);
-    const complaint = {
-        category: formData.get('category'),
-        location: formData.get('location'),
-        description: formData.get('description'),
-        urgency: formData.get('urgency'),
-        citizen_name: formData.get('citizen_name') || null,
-        contact: formData.get('contact') || null,
-    };
-
-    // Validate required fields
-    if (!complaint.category || !complaint.location || !complaint.description) {
-        showMessage('Please fill in all required fields', true);
-        return;
-    }
-
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting...';
-    formMessage.style.display = 'none';
+    addMessage(query, true);
+    queryInput.value = '';
 
     try {
-        const response = await fetch(COMPLAINT_API, {
+        const body = {
+            query: query,
+            language: selectedLang,
+            location: selectedLocation,
+            stadium: selectedStadium
+        };
+        console.debug('Sending advice request', body);
+        const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(complaint),
+            body: JSON.stringify(body)
         });
 
-        const data = await response.json();
-
+        console.debug('Advice response status:', response.status);
         if (!response.ok) {
-            throw new Error(data.detail || `HTTP error! status: ${response.status}`);
+            const text = await response.text();
+            console.error('Advice request failed body:', text);
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        showMessage(`Complaint submitted successfully! Reference #${data.id}`);
-        form.reset();
-        await loadComplaints();
+        const data = await response.json();
+        console.debug('Advice response data:', data);
+        addMessage(data.advice);
+        showRoute(data.route);
+
     } catch (error) {
-        console.error('Error submitting complaint:', error);
-        showMessage(`Error: ${error.message}`, true);
+        console.error('Error:', error);
+        addMessage('Sorry, I encountered an error. Please try again.');
     } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Complaint';
+        queryInput.disabled = false;
+        sendBtn.disabled = false;
+        statusDiv.textContent = 'Ready';
+        statusDiv.className = 'status ready';
+        queryInput.focus();
+    }
+}
+
+sendBtn.addEventListener('click', sendQuery);
+
+queryInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        sendQuery();
     }
 });
 
-// Initial load
-loadComplaints();
+async function loadStadiums() {
+    try {
+        console.debug('Loading stadium list from /stadiums');
+        const response = await fetch('/stadiums?nocache=' + Date.now());
+        console.debug('Stadium list response status:', response.status);
+        if (!response.ok) {
+            throw new Error('Failed to load stadium list');
+        }
+        const data = await response.json();
+        stadiumSelect.innerHTML = '';
+        data.stadiums.forEach((name) => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            stadiumSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Stadium loading error:', error);
+        stadiumSelect.innerHTML = '<option value="MetLife Stadium">MetLife Stadium</option>' +
+            '<option value="SoFi Stadium">SoFi Stadium</option>' +
+            '<option value="AT&T Stadium">AT&T Stadium</option>';
+    }
+}
+
+loadStadiums();
+
+queryInput.focus();
+
+window.addEventListener('error', (event) => {
+    console.error('Global runtime error:', event.error || event.message, event);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    console.error('Unhandled promise rejection:', event.reason);
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        routeImage.style.display = routeImage.src ? 'block' : 'none';
+    }
+});
