@@ -1,96 +1,125 @@
-"""Production SECRET_KEY enforcement in src/config.py.
+"""SECRET_KEY is required in every environment — no fallback.
 
-The insecure ``secrets.token_hex(32)`` fallback was removed. In production the
-``SECRET_KEY`` environment variable must be set to a strong, unique value and
-the app refuses to start otherwise (checked at startup via
-``Config.validate_production_config()``, called from the FastAPI lifespan).
-Outside production a fixed, clearly-insecure development default is used so
-local dev and the test suite can run.
+The fixed insecure development default (``_DEV_SECRET_KEY``) and any random
+at-import fallback are gone. The ``SECRET_KEY`` environment variable must be
+explicitly set before the package is imported, and the startup re-check
+``Config.validate_production_config()`` refuses to proceed without it in every
+``ENVIRONMENT``.
+
+Import-path behavior is exercised in real subprocesses (with a deliberately
+empty ``SECRET_KEY``, which an eventual ``SECRET_KEY=`` line in a local .env can
+never restore), so the tests are hermetic and don't depend on the repo's
+private .env.
 """
 
 import os
+import subprocess
 import sys
-from contextlib import contextmanager
 
 import pytest
 
 # Add src to path (mirrors the other test modules).
 sys.path.insert(0, "src")
 
-from config import Config, _DEV_SECRET_KEY
+from config import Config  # noqa: E402  (requires SECRET_KEY from tests/conftest.py)
+
+_SRC_DIR = os.path.join(os.path.dirname(__file__), "..", "src")
 
 
-@contextmanager
-def _env(**overrides):
-    """Snapshot os.environ, apply overrides (value None deletes the key), restore."""
+def _run_config_probe(code: str, environment, secret: str) -> subprocess.CompletedProcess:
+    """Run ``code`` in a subprocess importing src/config under a controlled env.
+
+    ``secret=""`` simulates "no SECRET_KEY": the empty string is falsy and, being
+    already present in os.environ, cannot be overwritten by ``load_env_file``.
+    """
+    env = dict(os.environ)
+    env["SECRET_KEY"] = secret
+    if environment is None:
+        env.pop("ENVIRONMENT", None)
+    else:
+        env["ENVIRONMENT"] = environment
+    env["PYTHONPATH"] = _SRC_DIR
+    return subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=os.path.dirname(_SRC_DIR),
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "environment", ["production", "development", "testing", "staging", None]
+)
+def test_import_requires_secret_key_in_every_environment(environment):
+    """Importing config with SECRET_KEY unset fails fast, whatever ENVIRONMENT."""
+    result = _run_config_probe("import config", environment=environment, secret="")
+    assert result.returncode != 0
+    assert "SECRET_KEY" in result.stderr
+    assert "no fallback" in result.stderr
+
+
+@pytest.mark.parametrize(
+    "environment", ["production", "development", "testing", "staging", None]
+)
+def test_import_accepts_explicit_secret_key_in_every_environment(environment):
+    """An explicitly-set SECRET_KEY lets config import in every environment."""
+    result = _run_config_probe(
+        "import config; print(config.Config.SECRET_KEY)",
+        environment=environment,
+        secret="explicit-test-secret-key-value",
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "explicit-test-secret-key-value"
+
+
+def test_no_secret_fallback_attribute_remains():
+    """Neither a fixed dev default nor a random fallback constant exists anymore."""
+    result = _run_config_probe(
+        "import config; "
+        "assert not hasattr(config, '_DEV_SECRET_KEY'); "
+        "assert not hasattr(config, '_DEFAULT_SECRET_KEY'); "
+        "assert not hasattr(config.Config, '_DEFAULT_SECRET_KEY'); "
+        "print('clean')",
+        environment="development",
+        secret="probe-key-value",
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "clean"
+
+
+@pytest.mark.parametrize(
+    "environment", ["production", "development", "testing", None]
+)
+def test_validate_config_requires_secret_key_in_every_environment(environment):
+    """Startup re-check raises when SECRET_KEY is missing in any environment."""
     original = dict(os.environ)
     try:
-        for key, value in overrides.items():
-            if value is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = value
-        yield
+        if environment is None:
+            os.environ.pop("ENVIRONMENT", None)
+        else:
+            os.environ["ENVIRONMENT"] = environment
+        os.environ.pop("SECRET_KEY", None)
+        with pytest.raises(ValueError, match="SECRET_KEY"):
+            Config.validate_production_config()
     finally:
         os.environ.clear()
         os.environ.update(original)
 
 
-def test_random_default_secret_attribute_removed():
-    """The random per-process _DEFAULT_SECRET_KEY fallback no longer exists."""
-    assert not hasattr(Config, "_DEFAULT_SECRET_KEY")
-
-
-def test_dev_secret_key_is_fixed_stable_value():
-    """Confirm _DEV_SECRET_KEY is a fixed stable value (not random per import)."""
-    assert isinstance(_DEV_SECRET_KEY, str)
-    assert _DEV_SECRET_KEY == "dev-insecure-do-not-use-in-production"
-
-
-def test_dev_secret_key_stable_across_imports():
-    """Confirm _DEV_SECRET_KEY is identical across fresh imports (not regenerated)."""
-    import sys
-    # Import config module fresh
-    if "config" in sys.modules:
-        del sys.modules["config"]
-    import config as config_first
-    key1 = config_first._DEV_SECRET_KEY
-
-    # Import again fresh
-    if "config" in sys.modules:
-        del sys.modules["config"]
-    import config as config_second
-    key2 = config_second._DEV_SECRET_KEY
-
-    # Both imports should yield the exact same fixed value
-    assert key1 == key2 == "dev-insecure-do-not-use-in-production"
-
-
-def test_production_without_secret_key_raises():
-    with _env(ENVIRONMENT="production", SECRET_KEY=None):
-        with pytest.raises(
-            ValueError, match="SECRET_KEY must be explicitly set in production"
-        ):
-            Config.validate_production_config()
-
-
-def test_production_with_dev_default_secret_raises():
-    with _env(ENVIRONMENT="production", SECRET_KEY=_DEV_SECRET_KEY):
-        with pytest.raises(ValueError, match="insecure development default"):
-            Config.validate_production_config()
-
-
-def test_production_with_real_secret_passes():
-    with _env(ENVIRONMENT="production", SECRET_KEY="a-strong-unique-production-secret"):
+@pytest.mark.parametrize(
+    "environment", ["production", "development", "testing", None]
+)
+def test_validate_config_accepts_explicit_secret_key_in_every_environment(environment):
+    """Startup re-check passes once SECRET_KEY is explicitly set."""
+    original = dict(os.environ)
+    try:
+        if environment is None:
+            os.environ.pop("ENVIRONMENT", None)
+        else:
+            os.environ["ENVIRONMENT"] = environment
+        os.environ["SECRET_KEY"] = "a-strong-unique-secret-value"
         Config.validate_production_config()  # must not raise
-
-
-def test_non_production_without_secret_key_is_allowed():
-    with _env(ENVIRONMENT="development", SECRET_KEY=None):
-        Config.validate_production_config()  # must not raise
-
-
-def test_missing_environment_var_defaults_to_non_production():
-    """No ENVIRONMENT set behaves as development: no enforcement."""
-    with _env(ENVIRONMENT=None, SECRET_KEY=None):
-        Config.validate_production_config()  # must not raise
+    finally:
+        os.environ.clear()
+        os.environ.update(original)

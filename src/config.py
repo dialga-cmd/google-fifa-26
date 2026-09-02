@@ -8,15 +8,6 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# Fixed, obviously-insecure key used ONLY outside production so local dev and
-# the test suite can sign and verify JWTs deterministically. Production MUST set
-# the SECRET_KEY environment variable to a strong, unique value; the startup
-# check Config.validate_production_config() refuses to boot otherwise. We
-# deliberately do NOT generate a random fallback here: a per-process random key
-# silently invalidates tokens across restarts and workers and masks the
-# missing-configuration error.
-_DEV_SECRET_KEY = "dev-insecure-do-not-use-in-production"
-
 
 def load_env_file() -> None:
     dotenv_path = Path(__file__).resolve().parent.parent / '.env'
@@ -43,6 +34,27 @@ def load_env_file() -> None:
 load_env_file()
 
 
+def _require_secret_key() -> str:
+    """Return SECRET_KEY, failing fast if it is not explicitly set.
+
+    SECRET_KEY signs JWTs (HS256) and must be stable across process restarts
+    and workers, so there is intentionally no fallback: a hardcoded literal is
+    a hardcoded secret (flagged by security scanners) and a random per-process
+    value silently invalidates tokens across restarts while masking the
+    missing-configuration error. Every environment must set it explicitly.
+    """
+    secret = os.getenv("SECRET_KEY")
+    if not secret:
+        raise ValueError(
+            "SECRET_KEY is required in every environment and must be set via "
+            "the SECRET_KEY environment variable (or a SECRET_KEY line in "
+            ".env). Generate a strong value with:\n"
+            '    python3 -c "import secrets; print(secrets.token_hex(32))"\n'
+            "There is no fallback; the app refuses to start without it."
+        )
+    return secret
+
+
 class Config:
     MQTT_BROKER = os.getenv("MQTT_BROKER", "test.mosquitto.org")
     MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
@@ -56,7 +68,7 @@ class Config:
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
     AI_PROVIDER = os.getenv("AI_PROVIDER", "auto")
     # Security settings
-    SECRET_KEY = os.getenv("SECRET_KEY", _DEV_SECRET_KEY)  # dev-only; production must set env
+    SECRET_KEY = _require_secret_key()
     ACCESS_TOKEN_EXPIRE_MINUTES = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
     )
@@ -92,18 +104,11 @@ class Config:
 
     @classmethod
     def validate_production_config(cls) -> None:
-        """Fail fast when SECRET_KEY is missing or left at the insecure dev
-        default while running in production. Invoked at app startup (lifespan)."""
-        if os.getenv("ENVIRONMENT", "development").lower() != "production":
-            return
-        secret = os.getenv("SECRET_KEY")
-        if not secret:
-            raise ValueError(
-                "Missing required environment variables for production: "
-                "SECRET_KEY. SECRET_KEY must be explicitly set in production."
-            )
-        if secret == _DEV_SECRET_KEY:
-            raise ValueError(
-                "SECRET_KEY must be explicitly set in production; the insecure "
-                "development default is not allowed."
-            )
+        """Fail fast when SECRET_KEY is missing, regardless of ENVIRONMENT.
+
+        The import-time check in ``_require_secret_key`` already guarantees a
+        key; this re-checks at startup (the FastAPI lifespan) so configuration
+        drift can never let the app boot without a JWT signing key. There is no
+        longer any production-only distinction for SECRET_KEY.
+        """
+        _require_secret_key()

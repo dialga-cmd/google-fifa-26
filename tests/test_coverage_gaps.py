@@ -607,15 +607,15 @@ class TestLifespanAndMain:
 class TestConfigValidationCoverage:
     """Additional tests for Config.validate_production_config."""
 
-    def test_validate_production_config_with_default_secret(self):
-        """Test validate_production_config with default secret (line 134)."""
+    def test_validate_production_config_with_missing_secret(self):
+        """Test validate_production_config raises without SECRET_KEY (any environment)."""
         original_env = dict(os.environ)
         try:
             os.environ["ENVIRONMENT"] = "production"
             # Remove SECRET_KEY to trigger the check
             if "SECRET_KEY" in os.environ:
                 del os.environ["SECRET_KEY"]
-            with pytest.raises(ValueError, match="Missing required environment variables for production"):
+            with pytest.raises(ValueError, match="SECRET_KEY is required"):
                 Config.validate_production_config()
         finally:
             os.environ.clear()

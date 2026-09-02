@@ -55,14 +55,13 @@ middleware is configured.
 - For local development, `load_env_file()` (in `src/config.py`) optionally reads
   a local `.env` and only sets keys that are not already in the environment, so
   real platform env vars always win.
-- **`SECRET_KEY` is required in production.** `Config.validate_production_config()`
-  is invoked at application startup (the FastAPI `lifespan` hook in `src/api.py`)
-  and raises immediately if, when `ENVIRONMENT=production`, `SECRET_KEY` is unset
-  or is left at the insecure development default. Outside production a fixed,
-  clearly-labelled insecure dev key is used so tests and local runs are
-  deterministic. There is intentionally **no** random per-process fallback: it
-  would silently invalidate tokens across restarts/workers and mask the
-  misconfiguration.
+- **`SECRET_KEY` is required in every environment — there is no fallback.**
+  `src/config.py` fails fast at import time when `SECRET_KEY` is unset, and
+  `Config.validate_production_config()` re-checks at application startup (the
+  FastAPI `lifespan` hook in `src/api.py`). Neither a fixed dev default nor a
+  random per-process fallback exists: a hardcoded secret is a scanner-flagged
+  security risk, and a random value would silently invalidate tokens across
+  restarts/workers while masking the misconfiguration.
 
 Secret-bearing variables (see `.env.example`): `SECRET_KEY`, `GEMINI_API_KEY`,
 `GROQ_API_KEY`, and `REDIS_PASSWORD`.

@@ -3,7 +3,6 @@ Comprehensive tests for api.py to improve coverage.
 """
 import json
 import os
-import secrets
 import tempfile
 from unittest.mock import patch
 
@@ -23,20 +22,18 @@ from api import (
 )
 
 
-def test_validate_production_config_with_missing_secret():
-    """Test validate_production_config raises error when SECRET_KEY is missing in production."""
+def test_validate_config_with_missing_secret_raises():
+    """validate_production_config raises when SECRET_KEY is missing, in any environment."""
     # Save original env vars
     original_env = dict(os.environ)
 
     try:
-        # Set environment to production
         os.environ["ENVIRONMENT"] = "production"
         # Remove SECRET_KEY if it exists
-        if "SECRET_KEY" in os.environ:
-            del os.environ["SECRET_KEY"]
+        os.environ.pop("SECRET_KEY", None)
 
         # Should raise ValueError
-        with pytest.raises(ValueError, match="Missing required environment variables for production"):
+        with pytest.raises(ValueError, match="SECRET_KEY is required"):
             Config.validate_production_config()
     finally:
         # Restore env
@@ -44,39 +41,13 @@ def test_validate_production_config_with_missing_secret():
         os.environ.update(original_env)
 
 
-def test_validate_production_config_with_default_secret():
-    """Test validate_production_config raises error when using default SECRET_KEY in production."""
+def test_validate_config_with_real_secret_passes():
+    """validate_production_config passes once an explicit SECRET_KEY is set."""
     # Save original env vars
     original_env = dict(os.environ)
 
     try:
-        # Set environment to production
         os.environ["ENVIRONMENT"] = "production"
-        # Temporarily set SECRET_KEY to what would be the default
-        original_secret = Config.SECRET_KEY
-        Config.SECRET_KEY = secrets.token_hex(32)  # This simulates the default
-
-        # Should raise ValueError
-        with pytest.raises(ValueError, match="SECRET_KEY must be explicitly set in production"):
-            Config.validate_production_config()
-
-        # Restore
-        Config.SECRET_KEY = original_secret
-    finally:
-        # Restore env
-        os.environ.clear()
-        os.environ.update(original_env)
-
-
-def test_validate_production_config_valid():
-    """Test validate_production_config passes with proper SECRET_KEY in production."""
-    # Save original env vars
-    original_env = dict(os.environ)
-
-    try:
-        # Set environment to production
-        os.environ["ENVIRONMENT"] = "production"
-        # Set a custom SECRET_KEY
         os.environ["SECRET_KEY"] = "test-secret-key-for-testing-purposes-only"
 
         # Should not raise
@@ -87,20 +58,18 @@ def test_validate_production_config_valid():
         os.environ.update(original_env)
 
 
-def test_validate_production_config_non_production():
-    """Test validate_production_config does nothing in non-production environments."""
+def test_validate_config_non_production_also_requires_secret():
+    """The old 'no enforcement outside production' behavior is gone."""
     # Save original env vars
     original_env = dict(os.environ)
 
     try:
-        # Set environment to development
+        # Development still requires SECRET_KEY
         os.environ["ENVIRONMENT"] = "development"
-        # Remove SECRET_KEY
-        if "SECRET_KEY" in os.environ:
-            del os.environ["SECRET_KEY"]
+        os.environ.pop("SECRET_KEY", None)
 
-        # Should not raise
-        Config.validate_production_config()  # Should not raise exception
+        with pytest.raises(ValueError, match="SECRET_KEY is required"):
+            Config.validate_production_config()
     finally:
         # Restore env
         os.environ.clear()

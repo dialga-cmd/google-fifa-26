@@ -52,18 +52,21 @@ pip install --require-hashes -r requirements-dev.txt
 
 ### 4. Configure environment variables
 
-Copy the template and fill in any values you need. All variables are optional
-for local development (sensible defaults are baked in), so this step can be
-skipped when just trying things out:
+Copy the template and fill in the required values. `SECRET_KEY` is **required
+in every environment** — the app refuses to start without it (there is no
+fallback). Generate a strong value and paste it into your `.env`:
 
 ```bash
 cp .env.example .env
+python3 -c "import secrets; print(secrets.token_hex(32))"
+# then edit .env and set SECRET_KEY to the generated value
 ```
 
 [.env.example](.env.example) documents every environment variable the app
 reads, grouped by concern (AI keys, security/JWT, Redis, rate limiting, MQTT,
 data files). `.env` is gitignored — never commit real secrets. `SECRET_KEY` is
-the only variable that is strictly required, and only when `ENVIRONMENT=production`.
+the only strictly-required variable and is enforced in every environment, not
+just production.
 
 ### 5. Generate sample data
 
@@ -137,7 +140,7 @@ Quick steps:
 1. Create a Render account and connect your GitHub repo.
 2. Add a new **Web Service** and select the `Docker` environment.
 3. Point the service to this repository and the `Dockerfile` at the repo root.
-4. Set environment variables in the Render dashboard (Production & Staging). See [.env.example](.env.example) for the complete list; at minimum set a strong `SECRET_KEY` (required when `ENVIRONMENT=production`) plus your AI keys:
+4. Set environment variables in the Render dashboard (Production & Staging). See [.env.example](.env.example) for the complete list; at minimum set a strong `SECRET_KEY` (required in every environment, not just production) plus your AI keys:
 
 ```text
 ENVIRONMENT=production
