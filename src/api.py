@@ -435,7 +435,7 @@ def generate_ai_response(prompt: str) -> Optional[str]:
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "llama-3.1-8b-instant",
+                    "model": "openai/gpt-oss-20b",
                     "messages": [
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt},
@@ -463,7 +463,7 @@ def generate_ai_response(prompt: str) -> Optional[str]:
                 logger.info("Trying Gemini provider")
                 client = google_genai.Client(api_key=Config.GEMINI_API_KEY)
                 gemini_response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.6-flash",
                     contents=full_prompt,
                 )
                 result = getattr(gemini_response, "text", None)

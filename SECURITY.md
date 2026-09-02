@@ -88,7 +88,7 @@ external AI provider selected by `AI_PROVIDER` (`auto`/`groq`/`gemini`):
 - **Groq**: `httpx.post` to `https://api.groq.com/openai/v1/chat/completions`
   with `Authorization: Bearer <GROQ_API_KEY>`.
 - **Gemini**: the `google-genai` SDK client constructed with
-  `api_key=<GEMINI_API_KEY>` (model `gemini-2.5-flash`).
+  `api_key=<GEMINI_API_KEY>` (model `gemini-3.6-flash`).
 
 Implications: (1) query content leaves the trust boundary and is processed under
 the third party's terms — do not send data you are not permitted to share with
